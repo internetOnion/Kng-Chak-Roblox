@@ -47,6 +47,10 @@ export type RunEvents = {
 	ShipBumped: Signal.Signal,
 
 	-- ()
+	-- A boost burst started (it cost a boost's fuel).
+	Boosted: Signal.Signal,
+
+	-- ()
 	-- The ship flew into the orbit band and locked onto the orbit track.
 	OrbitLocked: Signal.Signal,
 
@@ -107,6 +111,7 @@ RunEvents.Names = table.freeze({
 	"PlanetHit",
 	"RockClanged",
 	"ShipBumped",
+	"Boosted",
 	"OrbitLocked",
 	"OrbitLeft",
 	"OrbitCaptured",
