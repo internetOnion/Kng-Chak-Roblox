@@ -13,10 +13,12 @@
 
 local ArenaConfig = require("../Data/ArenaConfig")
 local ShipConfig = require("../Data/ShipConfig")
+local WaveConfig = require("../Data/WaveConfig")
 
 export type Tuning = {
 	Arena: ArenaConfig.ArenaConfig,
 	Ship: ShipConfig.ShipConfig,
+	Waves: WaveConfig.WaveConfig,
 }
 
 -- Section name -> key -> value, e.g. { Ship = { MaxSpeed = 30 } }.
@@ -28,6 +30,7 @@ local Tuning = {}
 local sections: { [string]: { [string]: any } } = {
 	Arena = ArenaConfig :: any,
 	Ship = ShipConfig :: any,
+	Waves = WaveConfig :: any,
 }
 Tuning.Sections = table.freeze(sections)
 

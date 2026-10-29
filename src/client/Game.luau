@@ -12,7 +12,6 @@ local RunService = game:GetService("RunService")
 
 local KngChak = ReplicatedStorage.KngChak
 local GameEvents = require(KngChak.GameEvents)
-local RockTypes = require(KngChak.Data.RockTypes)
 local Run = require(KngChak.Run.Run)
 
 local CameraView = require(script.Parent.Views.CameraView)
@@ -22,19 +21,13 @@ local RingsView = require(script.Parent.Views.RingsView)
 local RockView = require(script.Parent.Views.RockView)
 local ShipView = require(script.Parent.Views.ShipView)
 
--- Until the spawner lands: rocks of a few types, arriving one after another.
-local START_ROCKS: { Run.RockSetup } = {
-	{ Type = RockTypes.Rock, Position = Vector2.new(0, 40) },
-	{ Type = RockTypes.Comet, Position = Vector2.new(-40, 28) },
-	{ Type = RockTypes.Iron, Position = Vector2.new(30, -18) },
-}
-
 return function()
 	local folder = Instance.new("Folder")
 	folder.Name = "Arena"
 	folder.Parent = workspace
 
-	local run = Run.new({ Rocks = START_ROCKS })
+	-- The seed is the only randomness the Run gets; it's picked here, outside it.
+	local run = Run.new({ Seed = Random.new():NextInteger(1, 2 ^ 31 - 2) })
 	GameEvents.Follow(run.Events)
 
 	PlanetView.new(folder)

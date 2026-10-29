@@ -11,6 +11,7 @@
 	    rock.Type      RockType  see Data/RockTypes
 	    rock.Position  Vector2   arena position
 	    rock.Velocity  Vector2   arena units per second
+	    rock.FallSpeed number    arena units per second toward the planet (its type's, scaled by the wave)
 	    rock.IsPrimed  boolean   pushed by the flame (milestone 1, flame push)
 ]]
 
@@ -21,29 +22,32 @@ export type Rock = {
 	Type: RockTypes.RockType,
 	Position: Vector2,
 	Velocity: Vector2,
+	FallSpeed: number,
 	IsPrimed: boolean,
 }
 
 local Rock = {}
 
-function Rock.new(id: number, rockType: RockTypes.RockType, position: Vector2): Rock
+-- A new rock. `speedMult` scales its type's fall speed (default 1).
+function Rock.new(id: number, rockType: RockTypes.RockType, position: Vector2, speedMult: number?): Rock
 	return {
 		Id = id,
 		Type = rockType,
 		Position = position,
 		Velocity = Vector2.zero,
+		FallSpeed = rockType.FallSpeed * (speedMult or 1),
 		IsPrimed = false,
 	}
 end
 
--- Moves the rock straight toward the planet at its type's fall speed for dt seconds.
+-- Moves the rock straight toward the planet at its fall speed for dt seconds.
 function Rock.Fall(rock: Rock, dt: number)
 	local distance = rock.Position.Magnitude
 	if distance < 1e-6 then
 		rock.Velocity = Vector2.zero
 		return
 	end
-	rock.Velocity = -rock.Position / distance * rock.Type.FallSpeed
+	rock.Velocity = -rock.Position / distance * rock.FallSpeed
 	rock.Position += rock.Velocity * dt
 end
 

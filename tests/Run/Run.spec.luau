@@ -40,7 +40,7 @@ describe("Run", function()
 		local arrival = fallTime(rockType, start.Magnitude)
 
 		local function newRun(): Run.Run
-			return Run.new({ Rocks = { { Type = rockType, Position = start } } })
+			return Run.new({ Waves = {}, Rocks = { { Type = rockType, Position = start } } })
 		end
 
 		it("starts with the planet at full HP and the rock in the arena", function()
@@ -92,6 +92,7 @@ describe("Run", function()
 
 	it("damages the planet by each rock type's own amount", function()
 		local run = Run.new({
+			Waves = {},
 			Rocks = {
 				{ Type = RockTypes.Iron, Position = Vector2.new(15, 0) },
 				{ Type = RockTypes.Shard, Position = Vector2.new(-15, 0) },
@@ -104,7 +105,7 @@ describe("Run", function()
 
 	it("gives the same result at any frame rate", function()
 		local function after(frame: number)
-			local run = Run.new({ Rocks = { { Type = RockTypes.Rock, Position = Vector2.new(30, 40) } } })
+			local run = Run.new({ Waves = {}, Rocks = { { Type = RockTypes.Rock, Position = Vector2.new(30, 40) } } })
 			play(run, 3, frame)
 			return run:Snapshot().Rocks[1].Position
 		end
@@ -117,7 +118,7 @@ describe("Run", function()
 	end)
 
 	it("hands out snapshots that can't change the run", function()
-		local run = Run.new({ Rocks = { { Type = RockTypes.Rock, Position = Vector2.new(0, 40) } } })
+		local run = Run.new({ Waves = {}, Rocks = { { Type = RockTypes.Rock, Position = Vector2.new(0, 40) } } })
 		local snapshot = run:Snapshot()
 		expect(function()
 			(snapshot.Rocks[1] :: any).Position = Vector2.zero

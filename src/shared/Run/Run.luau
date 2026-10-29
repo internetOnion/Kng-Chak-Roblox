@@ -19,12 +19,14 @@
 
 local Flight = require("../Ship/Flight")
 local PlanetHealth = require("../Combat/PlanetHealth")
+local Rng = require("../Util/Rng")
 local Rock = require("../Rocks/Rock")
 local RockTypes = require("../Data/RockTypes")
 local RunEvents = require("./RunEvents")
 local RunInput = require("./RunInput")
 local Ship = require("../Ship/Ship")
 local Tuning = require("./Tuning")
+local WaveDirector = require("../Rocks/WaveDirector")
 
 local STEP = 1 / 60 -- seconds per fixed sub-step
 local MAX_FRAME = 0.25 -- a longer frame (a hitch) only advances this much, so nothing teleports
@@ -37,7 +39,11 @@ export type RockSetup = {
 	Position: Vector2,
 }
 
+export type WavePlan = WaveDirector.WavePlan
+
 export type Setup = {
+	Seed: number?, -- seeds every random choice the run makes (default 1)
+	Waves: { WavePlan }?, -- fixed waves instead of the wave data's; {} plays none
 	Rocks: { RockSetup }?, -- rocks already in the arena when the run starts
 	ShipStart: Vector2?, -- default: the arena data's ShipStart
 	ShipHeading: number?, -- radians; default: nose straight down the screen
@@ -46,6 +52,8 @@ export type Setup = {
 
 -- What other code may read. Rebuilt on every Snapshot() call; changing it changes nothing.
 export type Snapshot = {
+	Wave: number, -- 0 before the first wave starts
+	Phase: WaveDirector.Phase,
 	PlanetHp: number,
 	PlanetMaxHp: number,
 	Ship: Ship.Ship,
@@ -66,14 +74,15 @@ export type Run = typeof(setmetatable(
 		_ship: Ship.Ship,
 		_rocks: { Rock.Rock },
 		_nextRockId: number,
+		_director: WaveDirector.WaveDirector,
 		_pending: number, -- frame time not simulated yet, less than one sub-step
 		_boostQueued: boolean, -- a boost press waiting for the next sub-step
 	},
 	Run
 ))
 
-local function addRock(self: Run, rockType: RockTypes.RockType, position: Vector2)
-	table.insert(self._rocks, Rock.new(self._nextRockId, rockType, position))
+local function addRock(self: Run, rockType: RockTypes.RockType, position: Vector2, speedMult: number?)
+	table.insert(self._rocks, Rock.new(self._nextRockId, rockType, position, speedMult))
 	self._nextRockId += 1
 end
 
@@ -98,6 +107,15 @@ local function tick(self: Run, input: Input, dt: number)
 	self._boostQueued = false
 	Flight.Step(self._ship, self._tuning, input, boostPressed, dt)
 	stepRocks(self, dt)
+	self._director:Step(dt, {
+		tuning = self._tuning,
+		events = self.Events,
+		rockCount = #self._rocks,
+		shipPosition = self._ship.Position,
+		spawn = function(rockType: RockTypes.RockType, position: Vector2, speedMult: number)
+			addRock(self, rockType, position, speedMult)
+		end,
+	})
 end
 
 function Run.new(setup: Setup?): Run
@@ -113,6 +131,7 @@ function Run.new(setup: Setup?): Run
 		),
 		_rocks = {},
 		_nextRockId = 1,
+		_director = WaveDirector.new(Rng.new(setup and setup.Seed or 1), setup and setup.Waves),
 		_pending = 0,
 		_boostQueued = false,
 	}, Run)
@@ -144,6 +163,8 @@ function Run.Snapshot(self: Run): Snapshot
 		table.insert(rocks, Rock.Snapshot(rock))
 	end
 	return table.freeze({
+		Wave = self._director.Wave,
+		Phase = self._director.Phase,
 		PlanetHp = self._planet.Hp,
 		PlanetMaxHp = self._planet.MaxHp,
 		Ship = Ship.Snapshot(self._ship),
