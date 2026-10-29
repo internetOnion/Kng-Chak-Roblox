@@ -9,14 +9,20 @@
 	both away. Each frame the input adapter turns the player's controls into the
 	Run's input, the Run steps, then the views and HUD read its snapshot.
 	GameEvents follows the current Run, so anything listening there hears it.
+
+	Input reaches the Run through a replay recorder, rounded the way recordings
+	store it. In Studio, F7 prints the current run's seed and recording to Output
+	as a Luau module: save it under tests/Replays to replay the run exactly.
 ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
 local KngChak = ReplicatedStorage.KngChak
 local GameEvents = require(KngChak.GameEvents)
+local Replay = require(KngChak.Run.Replay)
 local Run = require(KngChak.Run.Run)
 
 local CameraView = require(script.Parent.Views.CameraView)
@@ -29,8 +35,12 @@ local RingsView = require(script.Parent.Views.RingsView)
 local RockView = require(script.Parent.Views.RockView)
 local ShipView = require(script.Parent.Views.ShipView)
 
+local DUMP_KEY = Enum.KeyCode.F7 -- Studio only: print the current run's recording
+
 type Session = {
 	run: Run.Run,
+	recorder: Replay.Recorder?, -- Studio only, so a long run on a phone doesn't keep every frame
+	log: { string },
 	folder: Folder,
 	rings: RingsView.RingsView,
 	rocks: RockView.RockView,
@@ -45,12 +55,15 @@ local function newSession(): Session
 	folder.Name = "Arena"
 	folder.Parent = workspace
 
-	local run = Run.new({ Seed = Random.new():NextInteger(1, 2 ^ 31 - 2) })
+	local seed = Random.new():NextInteger(1, 2 ^ 31 - 2)
+	local run = Run.new({ Seed = seed })
 	GameEvents.Follow(run.Events)
 
 	PlanetView.new(folder)
 	return {
 		run = run,
+		recorder = if RunService:IsStudio() then Replay.Recorder.new(seed) else nil,
+		log = Replay.Log(run),
 		folder = folder,
 		rings = RingsView.new(folder),
 		rocks = RockView.new(folder),
@@ -90,12 +103,29 @@ return function()
 		play()
 	end
 
+	if RunService:IsStudio() then
+		UserInputService.InputBegan:Connect(function(input: InputObject)
+			local recorder = session.recorder
+			if input.KeyCode == DUMP_KEY and recorder then
+				local recording = recorder:Finish(session.log, session.run)
+				print(`[Replay] seed {recording.Seed}, {#recording.Frames} frames, {#recording.Events} events:`)
+				print(Replay.Encode(recording))
+			end
+		end)
+	end
+
 	hud:SetVisible(false)
 	overlay:Show("KNG CHAK", "Defend the planet.\nTap to start", play)
 
 	RunService.RenderStepped:Connect(function(dt: number)
 		if state == "Playing" then
-			session.run:Step(controls:Read(snapshot.Ship.Position), dt)
+			local input = controls:Read(snapshot.Ship.Position)
+			local recorder = session.recorder
+			if recorder then
+				session.run:Step(recorder:Record(input, dt))
+			else
+				session.run:Step(Replay.Quantize(input, dt))
+			end
 		end
 		snapshot = session.run:Snapshot()
 
