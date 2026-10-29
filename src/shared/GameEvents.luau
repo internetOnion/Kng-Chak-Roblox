@@ -14,7 +14,7 @@
 	Each event lists its arguments, in order. Fire them in that order.
 ]]
 
-local Signal = require(script.Parent.Util.Signal)
+local Signal = require("./Util/Signal")
 
 local GameEvents = {
 	-- (rock: Rock, cause: string)

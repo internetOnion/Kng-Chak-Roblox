@@ -1,0 +1,88 @@
+--!strict
+local ArenaConfig = require("@shared/Data/ArenaConfig")
+local PlanetHealth = require("@shared/Combat/PlanetHealth")
+local TestKit = require("@testkit")
+
+local describe, it, expect = TestKit.describe, TestKit.it, TestKit.expect
+
+-- Records every Changed and Depleted event a PlanetHealth fires.
+local function watch(health: PlanetHealth.PlanetHealth)
+	local log = { changed = {}, depleted = 0 }
+	health.Changed:Connect(function(hp: number, delta: number)
+		table.insert(log.changed, { hp, delta })
+	end)
+	health.Depleted:Connect(function()
+		log.depleted += 1
+	end)
+	return log
+end
+
+describe("PlanetHealth", function()
+	it("starts full, at the arena's max HP", function()
+		local health = PlanetHealth.new()
+		expect(health.Hp).toBe(ArenaConfig.PlanetMaxHp)
+		expect(health:IsDepleted()).toBe(false)
+	end)
+
+	it("loses HP when damaged and reports the change", function()
+		local health = PlanetHealth.new()
+		local log = watch(health)
+		health:TakeDamage(8)
+		expect(health.Hp).toBe(92)
+		expect(log.changed).toEqual({ { 92, -8 } })
+	end)
+
+	it("stops at 0 and fires Depleted once", function()
+		local health = PlanetHealth.new()
+		local log = watch(health)
+		health:TakeDamage(60)
+		health:TakeDamage(60)
+		health:TakeDamage(15)
+		expect(health.Hp).toBe(0)
+		expect(health:IsDepleted()).toBe(true)
+		expect(log.changed).toEqual({ { 40, -60 }, { 0, -40 } })
+		expect(log.depleted).toBe(1)
+	end)
+
+	it("ignores damage and heals once depleted", function()
+		local health = PlanetHealth.new()
+		health:TakeDamage(100)
+		local log = watch(health)
+		health:Heal(10)
+		health:TakeDamage(10)
+		expect(health.Hp).toBe(0)
+		expect(#log.changed).toBe(0)
+	end)
+
+	it("heals up to full but not past it", function()
+		local health = PlanetHealth.new()
+		health:TakeDamage(5)
+		local log = watch(health)
+		health:Heal(3)
+		health:Heal(6)
+		health:Heal(1)
+		expect(health.Hp).toBe(100)
+		expect(log.changed).toEqual({ { 98, 3 }, { 100, 2 } })
+	end)
+
+	it("ignores zero and negative amounts", function()
+		local health = PlanetHealth.new()
+		health:TakeDamage(10)
+		local log = watch(health)
+		health:TakeDamage(0)
+		health:TakeDamage(-5)
+		health:Heal(-5)
+		expect(health.Hp).toBe(90)
+		expect(#log.changed).toBe(0)
+	end)
+
+	it("refills to full on Reset, even after being depleted", function()
+		local health = PlanetHealth.new()
+		health:TakeDamage(100)
+		local log = watch(health)
+		health:Reset()
+		expect(health.Hp).toBe(100)
+		expect(health:IsDepleted()).toBe(false)
+		expect(log.changed).toEqual({ { 100, 100 } })
+	end)
+end)

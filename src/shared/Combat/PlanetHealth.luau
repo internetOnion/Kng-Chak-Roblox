@@ -17,8 +17,8 @@
 	    Depleted ()                           once, when HP reaches 0
 ]]
 
-local ArenaConfig = require(script.Parent.Parent.Data.ArenaConfig)
-local Signal = require(script.Parent.Parent.Util.Signal)
+local ArenaConfig = require("../Data/ArenaConfig")
+local Signal = require("../Util/Signal")
 
 local PlanetHealth = {}
 PlanetHealth.__index = PlanetHealth

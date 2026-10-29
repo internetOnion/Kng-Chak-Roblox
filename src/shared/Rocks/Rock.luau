@@ -21,10 +21,10 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local ArenaSpace = require(script.Parent.Parent.Arena.ArenaSpace)
-local GameEvents = require(script.Parent.Parent.GameEvents)
-local RockTypes = require(script.Parent.Parent.Data.RockTypes)
-local Signal = require(script.Parent.Parent.Util.Signal)
+local ArenaSpace = require("../Arena/ArenaSpace")
+local GameEvents = require("../GameEvents")
+local RockTypes = require("../Data/RockTypes")
+local Signal = require("../Util/Signal")
 
 local Rock = {}
 Rock.__index = Rock

@@ -18,9 +18,9 @@
 	                                         velocity it gets knocked away with
 ]]
 
-local ArenaConfig = require(script.Parent.Parent.Data.ArenaConfig)
-local Rock = require(script.Parent.Parent.Rocks.Rock)
-local Signal = require(script.Parent.Parent.Util.Signal)
+local ArenaConfig = require("../Data/ArenaConfig")
+local Rock = require("../Rocks/Rock")
+local Signal = require("../Util/Signal")
 
 local ShipController = {}
 ShipController.__index = ShipController
