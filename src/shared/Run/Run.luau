@@ -66,6 +66,8 @@ export type Snapshot = {
 	Multiplier: number, -- score multiplier at the current combo
 	PlanetHp: number,
 	PlanetMaxHp: number,
+	PlanetShield: number, -- % on top of HP, soaked before HP
+	PlanetMaxShield: number,
 	Ship: Ship.Ship,
 	FuelMax: number,
 	Rocks: { Rock.Rock },
@@ -150,7 +152,10 @@ function Run.new(setup: Setup?): Run
 	local tuning = Tuning.new(setup and setup.Tuning)
 	local events = RunEvents.new()
 	local rocks = {}
-	local planet = PlanetHealth.new(tuning.Arena.PlanetMaxHp)
+	local planet = PlanetHealth.new(tuning.Arena.PlanetMaxHp, tuning.Arena.PlanetMaxShield)
+	planet.ShieldChanged:Connect(function(shield: number, delta: number)
+		events.ShieldChanged:Fire(shield, delta)
+	end)
 	local combo = Combo.new()
 	local self = setmetatable({
 		Events = events,
@@ -210,6 +215,8 @@ function Run.Snapshot(self: Run): Snapshot
 		Multiplier = Combo.Multiplier(self._combo, self._tuning),
 		PlanetHp = self._planet.Hp,
 		PlanetMaxHp = self._planet.MaxHp,
+		PlanetShield = self._planet.Shield,
+		PlanetMaxShield = self._planet.MaxShield,
 		Ship = Ship.Snapshot(self._ship),
 		FuelMax = self._tuning.Ship.FuelMax,
 		Rocks = table.freeze(rocks),

@@ -1,6 +1,6 @@
 --!strict
 --[[
-	Hud: planet HP %, wave, score and combo, readable at phone size.
+	Hud: planet HP % (and shield), wave, score and combo, readable at phone size.
 
 	    local hud = Hud.new(playerGui)
 	    hud:Update(run:Snapshot()) -- every frame
@@ -88,9 +88,11 @@ end
 
 function Hud.Update(self: Hud, snapshot: Run.Snapshot)
 	local hp = math.ceil(snapshot.PlanetHp)
-	if self._shown.hp ~= hp then
+	local shield = math.ceil(snapshot.PlanetShield)
+	if self._shown.hp ~= hp or self._shown.shield ~= shield then
 		self._shown.hp = hp
-		self._hp.Text = `HP {hp}%`
+		self._shown.shield = shield
+		self._hp.Text = if shield > 0 then `HP {hp}% +{shield}` else `HP {hp}%`
 		self._hp.TextColor3 = if hp < LOW_HP_AT then LOW_HP else TEXT
 	end
 	if self._shown.wave ~= snapshot.Wave then

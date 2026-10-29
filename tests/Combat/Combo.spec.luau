@@ -237,3 +237,58 @@ describe("Fuel from combos", function()
 		expect(run:Snapshot().Ship.Fuel - before).toBeCloseTo(regen, 1e-6)
 	end)
 end)
+
+describe("Shield from heals", function()
+	-- A PERFECT at full HP: the ship sits in orbit under a rock the flare catches, then slingshots into it.
+	local function perfectAtFull(tuning: any?): (Run.Run, { { any } })
+		local run = Run.new({
+			Waves = {},
+			ShipStart = Vector2.new(0, -TRACK),
+			ShipHeading = 0,
+			Rocks = { { Type = RockTypes.Rock, Position = Vector2.new(0, -(TRACK + 6)) } },
+			Tuning = tuning or { Ship = { OrbitEntryMin = 0 } },
+		})
+		local log = record(run)
+		play(run, RunInput.Idle, 0.4)
+		play(run, RunInput.steer(OUT), 0.5)
+		return run, log
+	end
+
+	it("turns a heal at full HP into shield", function()
+		local run, log = perfectAtFull()
+		local snapshot = run:Snapshot()
+		expect(snapshot.PlanetHp).toBe(ArenaConfig.PlanetMaxHp)
+		expect(snapshot.PlanetShield).toBe(ComboConfig.HealPerfect)
+		local changed = find(log, "ShieldChanged")
+		expect(changed ~= nil).toBe(true)
+		expect((changed :: any)[2]).toBe(ComboConfig.HealPerfect)
+	end)
+
+	it("caps the shield at the arena's max shield", function()
+		local run = perfectAtFull({ Ship = { OrbitEntryMin = 0 }, Arena = { PlanetMaxShield = 4 } })
+		expect(run:Snapshot().PlanetShield).toBe(4)
+	end)
+
+	it("takes an impact from the shield first, then HP", function()
+		local run = Run.new({
+			Waves = {},
+			ShipStart = Vector2.new(0, -TRACK),
+			ShipHeading = 0,
+			Rocks = {
+				{ Type = RockTypes.Rock, Position = Vector2.new(0, -(TRACK + 6)) },
+				{ Type = RockTypes.Rock, Position = Vector2.new(0, 22) }, -- lands on the far side, later
+			},
+			Tuning = { Ship = { OrbitEntryMin = 0 } },
+		})
+		play(run, RunInput.Idle, 0.4)
+		play(run, RunInput.steer(OUT), 0.5)
+		expect(run:Snapshot().PlanetShield).toBe(ComboConfig.HealPerfect)
+		play(run, RunInput.Idle, 8)
+		local snapshot = run:Snapshot()
+		expect(#snapshot.Rocks).toBe(0)
+		expect(snapshot.PlanetShield).toBe(0)
+		expect(snapshot.PlanetHp).toBe(
+			ArenaConfig.PlanetMaxHp - (RockTypes.Rock.DamagePercent - ComboConfig.HealPerfect)
+		)
+	end)
+end)

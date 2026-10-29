@@ -41,6 +41,7 @@ local PlanetView = require(script.Parent.Views.PlanetView)
 local PlayerInput = require(script.Parent.Input.PlayerInput)
 local RingsView = require(script.Parent.Views.RingsView)
 local RockView = require(script.Parent.Views.RockView)
+local ShieldView = require(script.Parent.Views.ShieldView)
 local ShipView = require(script.Parent.Views.ShipView)
 local Stage = require(script.Parent.Views.Stage)
 local StyleTile = require(script.Parent.Dev.StyleTile)
@@ -57,6 +58,7 @@ type Session = {
 	folder: Folder,
 	rings: RingsView.RingsView,
 	rocks: RockView.RockView,
+	shield: ShieldView.ShieldView,
 	ship: ShipView.ShipView,
 }
 
@@ -98,6 +100,7 @@ local function newSession(overrides: Tuning.Overrides?): Session
 		folder = folder,
 		rings = RingsView.new(folder),
 		rocks = RockView.new(folder),
+		shield = ShieldView.new(folder),
 		ship = ShipView.new(folder),
 	}
 end
@@ -233,6 +236,7 @@ return function()
 		session.rings:Update(snapshot.Ship, arena)
 		session.ship:Update(snapshot.Ship)
 		session.rocks:Update(snapshot.Rocks)
+		session.shield:Update(snapshot.PlanetShield, snapshot.PlanetMaxShield, arena)
 		hud:Update(snapshot)
 	end)
 end

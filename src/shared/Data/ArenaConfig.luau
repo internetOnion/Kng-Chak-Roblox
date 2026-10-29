@@ -11,6 +11,7 @@ local ArenaConfig = {
 	-- Planet
 	PlanetRadius = 10,
 	PlanetMaxHp = 100, -- HP is a percentage
+	PlanetMaxShield = 25, -- heals past full HP build a shield up to this many %; it soaks impacts first
 
 	-- Orbit band (heights above the planet's surface)
 	OrbitBandTop = 4.5, -- flying below this locks you into orbit
