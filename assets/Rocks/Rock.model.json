@@ -1,0 +1,29 @@
+{
+  "className": "Part",
+  "properties": {
+    "Shape": "Ball",
+    "Size": [2, 2, 2],
+    "Color": [0.69, 0.54, 0.41],
+    "Material": "SmoothPlastic",
+    "TopSurface": "Smooth",
+    "BottomSurface": "Smooth",
+    "Anchored": true,
+    "CanCollide": false,
+    "CanTouch": false,
+    "CastShadow": false
+  },
+  "children": [
+    {
+      "name": "PrimeGlow",
+      "className": "Highlight",
+      "properties": {
+        "Enabled": false,
+        "FillColor": [1, 0.82, 0.4],
+        "FillTransparency": 0.35,
+        "OutlineColor": [1, 0.31, 0.85],
+        "OutlineTransparency": 0,
+        "DepthMode": "Occluded"
+      }
+    }
+  ]
+}
