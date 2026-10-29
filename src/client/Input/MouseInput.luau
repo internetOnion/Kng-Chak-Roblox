@@ -16,7 +16,7 @@ local UserInputService = game:GetService("UserInputService")
 local KngChak = ReplicatedStorage.KngChak
 local ArenaConfig = require(KngChak.Data.ArenaConfig)
 local ArenaSpace = require(KngChak.Arena.ArenaSpace)
-local ControlsConfig = require(KngChak.Data.ControlsConfig)
+local Controls = require(KngChak.Input.Controls)
 local RunInput = require(KngChak.Run.RunInput)
 
 local MouseInput = {}
@@ -63,25 +63,12 @@ end
 function MouseInput.Read(self: MouseInput, shipPosition: Vector2): RunInput.RunInput
 	local boostPressed = self._boostPressed
 	self._boostPressed = false
-
-	local move, strength = Vector2.zero, 0
 	local aim = cursorOnPlane()
-	if aim then
-		local offset = aim - shipPosition
-		local distance = offset.Magnitude
-		if distance > ControlsConfig.CursorDeadzone then
-			move = offset / distance
-			strength = math.clamp((distance - ControlsConfig.CursorDeadzone) / ControlsConfig.CursorFullRange, 0, 1)
-		end
-	end
-
-	return table.freeze({
-		Move = move,
-		MoveStrength = strength,
-		BoostPressed = boostPressed,
-		BoostHeld = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
+	return Controls.FromCursor(if aim then aim - shipPosition else nil, {
+		boostPressed = boostPressed,
+		boostHeld = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
 			or UserInputService:IsKeyDown(Enum.KeyCode.Space),
-		Brake = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) or UserInputService:IsKeyDown(
+		brake = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) or UserInputService:IsKeyDown(
 			Enum.KeyCode.LeftShift
 		) or UserInputService:IsKeyDown(Enum.KeyCode.RightShift),
 	})
