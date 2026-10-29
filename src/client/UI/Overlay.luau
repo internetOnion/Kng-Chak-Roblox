@@ -18,6 +18,7 @@ export type Overlay = typeof(setmetatable(
 		_title: TextLabel,
 		_body: TextLabel,
 		_onTap: (() -> ())?,
+		_suppressed: boolean,
 	},
 	Overlay
 ))
@@ -64,7 +65,10 @@ function Overlay.new(parent: Instance): Overlay
 	body.TextWrapped = true
 	body.Parent = button
 
-	local self = setmetatable({ _gui = gui, _title = title, _body = body, _onTap = nil }, Overlay)
+	local self = setmetatable(
+		{ _gui = gui, _title = title, _body = body, _onTap = nil :: (() -> ())?, _suppressed = false },
+		Overlay
+	)
 	button.Activated:Connect(function()
 		local onTap = self._onTap
 		if onTap then
@@ -80,12 +84,18 @@ function Overlay.Show(self: Overlay, title: string, body: string, onTap: () -> (
 	self._title.Text = title
 	self._body.Text = body
 	self._onTap = onTap
-	self._gui.Enabled = true
+	self._gui.Enabled = not self._suppressed
 end
 
 function Overlay.Hide(self: Overlay)
 	self._onTap = nil
 	self._gui.Enabled = false
+end
+
+-- Keeps the screen out of sight (while the style tile shows) without forgetting it.
+function Overlay.SetSuppressed(self: Overlay, suppressed: boolean)
+	self._suppressed = suppressed
+	self._gui.Enabled = not suppressed and self._onTap ~= nil
 end
 
 return Overlay

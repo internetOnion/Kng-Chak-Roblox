@@ -69,8 +69,12 @@ Anything whose colour changes in play is one model whose part colours are set fr
 ## Scale, camera and lighting
 - 1 stud = 1 arena unit. Planet radius 10, orbit band up to 4.5 above the surface (radius 14.5), arena edge at radius 66. A rock's size in the data is its **radius** (a size 1.4 rock is 2.8 studs across). The ship is about 3.2 studs long.
 - Objects sit at real heights above the play plane instead of sorting layers: sky at −16, planet centred on the plane, rocks at +2, ship at +3, VFX above them, world UI on top.
-- **Camera:** high above the plane with a narrow field of view (about 20°), tilted about 18° from straight down, top of the screen toward the north. Decide the zoom (CamView 50 vs ~35) on a phone before building final models.
-- **Lighting:** bright daytime, shadows on, colour correction with saturation about +0.25 and contrast about +0.12, and mild bloom so Neon glows without washing out.
+- **Camera:** high above the plane with a fairly narrow field of view (**30°**), tilted 18° from straight down, top of the screen toward the north. The style tile (#17) moved it from 20° to 30°: at 20° the camera sat about 284 studs up, and at low graphics quality Roblox stopped drawing anything past about 300 studs, which blanked the top of the screen. At 30° everything on screen is within about 225 studs. Decide the zoom (CamView 50 vs ~35) on a phone before building final models (#18).
+- **Lighting:** bright daytime, shadows on, colour correction with saturation about +0.25 and contrast about +0.12, and mild bloom so Neon glows without washing out. The values settled in the style tile (set by `Views/Stage`, which also switches off a template's atmosphere haze, depth of field and sun rays):
+  - Lighting: ClockTime 13.5, GeographicLatitude 20, Brightness 2.6, Ambient `#8c86c8`, OutdoorAmbient `#b8b2ff`, GlobalShadows on.
+  - Bloom: Intensity 0.35, Size 18, Threshold 1.4. Colour correction: Saturation 0.25, Contrast 0.12, Brightness 0.04.
+- **Sky:** a flat `#3d3ad8` backdrop 16 studs below the plane, with Neon stars 0.4–1.1 studs across (80% white, 20% `#ffe066`), about 4 per 1,000 square studs.
+- **Settled shapes (from the style tile):** the orbit band is 36 Neon beads (0.45 × 0.3 × 1.4 studs, 25% transparent) rather than a solid line; the flame is three nested Neon ellipsoids (edge, mid, core at 100%, 72% and 44% of the length) coloured from the heat ladder; the Lancer's soft nose is a 1.3-stud helmet ball, swapped for a long white spear with a red tip while boosting.
 
 ## Who makes what
 | Source | Assets |

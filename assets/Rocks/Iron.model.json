@@ -5,6 +5,12 @@
       "name": "Body",
       "className": "Part",
       "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
         "Size": [
           1.7,
           1.7,
@@ -21,143 +27,32 @@
           0.6392
         ],
         "Material": "SmoothPlastic",
-        "TopSurface": "Smooth",
-        "BottomSurface": "Smooth",
-        "Anchored": true,
-        "CanCollide": false,
-        "CanTouch": false,
-        "CanQuery": false
-      }
-    },
-    {
-      "name": "RivetA",
-      "className": "Part",
-      "properties": {
-        "Size": [
-          0.38,
-          0.38,
-          0.38
-        ],
-        "Position": [
-          0.6,
-          0.86,
-          0.6
-        ],
-        "Color": [
-          0.2353,
-          0.2745,
-          0.3451
-        ],
-        "Material": "SmoothPlastic",
-        "TopSurface": "Smooth",
-        "BottomSurface": "Smooth",
-        "Anchored": true,
-        "CanCollide": false,
-        "CanTouch": false,
-        "CanQuery": false,
-        "Shape": "Ball"
-      }
-    },
-    {
-      "name": "RivetB",
-      "className": "Part",
-      "properties": {
-        "Size": [
-          0.38,
-          0.38,
-          0.38
-        ],
-        "Position": [
-          -0.6,
-          0.86,
-          0.6
-        ],
-        "Color": [
-          0.2353,
-          0.2745,
-          0.3451
-        ],
-        "Material": "SmoothPlastic",
-        "TopSurface": "Smooth",
-        "BottomSurface": "Smooth",
-        "Anchored": true,
-        "CanCollide": false,
-        "CanTouch": false,
-        "CanQuery": false,
-        "Shape": "Ball"
-      }
-    },
-    {
-      "name": "RivetC",
-      "className": "Part",
-      "properties": {
-        "Size": [
-          0.38,
-          0.38,
-          0.38
-        ],
-        "Position": [
-          0.6,
-          0.86,
-          -0.6
-        ],
-        "Color": [
-          0.2353,
-          0.2745,
-          0.3451
-        ],
-        "Material": "SmoothPlastic",
-        "TopSurface": "Smooth",
-        "BottomSurface": "Smooth",
-        "Anchored": true,
-        "CanCollide": false,
-        "CanTouch": false,
-        "CanQuery": false,
-        "Shape": "Ball"
-      }
-    },
-    {
-      "name": "RivetD",
-      "className": "Part",
-      "properties": {
-        "Size": [
-          0.38,
-          0.38,
-          0.38
-        ],
-        "Position": [
-          -0.6,
-          0.86,
-          -0.6
-        ],
-        "Color": [
-          0.2353,
-          0.2745,
-          0.3451
-        ],
-        "Material": "SmoothPlastic",
-        "TopSurface": "Smooth",
-        "BottomSurface": "Smooth",
-        "Anchored": true,
-        "CanCollide": false,
-        "CanTouch": false,
-        "CanQuery": false,
-        "Shape": "Ball"
-      }
-    },
-    {
-      "name": "Band",
-      "className": "Part",
-      "properties": {
-        "Size": [
-          1.76,
-          0.3,
-          1.76
-        ],
-        "Position": [
+        "Orientation": [
           0,
-          0.35,
+          30,
           0
+        ]
+      }
+    },
+    {
+      "name": "Rivet1",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.35,
+          0.35,
+          0.35
+        ],
+        "Position": [
+          0.7513,
+          0.85,
+          0.2013
         ],
         "Color": [
           0.2353,
@@ -165,12 +60,94 @@
           0.3451
         ],
         "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Rivet2",
+      "className": "Part",
+      "properties": {
         "TopSurface": "Smooth",
         "BottomSurface": "Smooth",
         "Anchored": true,
         "CanCollide": false,
         "CanTouch": false,
-        "CanQuery": false
+        "CanQuery": false,
+        "Size": [
+          0.35,
+          0.35,
+          0.35
+        ],
+        "Position": [
+          0.2013,
+          0.85,
+          -0.7513
+        ],
+        "Color": [
+          0.2353,
+          0.2745,
+          0.3451
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Rivet3",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.35,
+          0.35,
+          0.35
+        ],
+        "Position": [
+          -0.2013,
+          0.85,
+          0.7513
+        ],
+        "Color": [
+          0.2353,
+          0.2745,
+          0.3451
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Rivet4",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.35,
+          0.35,
+          0.35
+        ],
+        "Position": [
+          -0.7513,
+          0.85,
+          -0.2013
+        ],
+        "Color": [
+          0.2353,
+          0.2745,
+          0.3451
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
       }
     },
     {

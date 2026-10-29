@@ -14,6 +14,10 @@
 	store it. In Studio, F7 prints the current run's seed and recording to Output
 	as a Luau module: save it under tests/Replays to replay the run exactly.
 	Also in Studio, T opens the live tuning panel (see Dev/TuningPanel).
+
+	In Studio, and for the experience's owner on any device, a dev bar switches
+	the zoom between the two candidates (#18) and shows the style tile (#17).
+	The game is paused while the tile shows.
 ]]
 
 local Players = game:GetService("Players")
@@ -28,6 +32,7 @@ local Run = require(KngChak.Run.Run)
 local Tuning = require(KngChak.Run.Tuning)
 
 local CameraView = require(script.Parent.Views.CameraView)
+local DevBar = require(script.Parent.Dev.DevBar)
 local Device = require(script.Parent.Device)
 local Hud = require(script.Parent.UI.Hud)
 local Overlay = require(script.Parent.UI.Overlay)
@@ -36,9 +41,13 @@ local PlayerInput = require(script.Parent.Input.PlayerInput)
 local RingsView = require(script.Parent.Views.RingsView)
 local RockView = require(script.Parent.Views.RockView)
 local ShipView = require(script.Parent.Views.ShipView)
+local Stage = require(script.Parent.Views.Stage)
+local StyleTile = require(script.Parent.Dev.StyleTile)
 local TuningPanel = require(script.Parent.Dev.TuningPanel)
 
 local DUMP_KEY = Enum.KeyCode.F7 -- Studio only: print the current run's recording
+local ZOOMS = { 50, 35 } -- the CamView candidates the phone playtest compares (#18)
+local SKY_HALF = Vector2.new(190, 140) -- the sky covers the arena plus a screen's width around it
 
 type Session = {
 	run: Run.Run,
@@ -52,7 +61,24 @@ type Session = {
 
 type State = "Start" | "Playing" | "Over"
 
--- A new Run and its views, with the tuning panel's overrides (if any).
+-- The tuning panel's overrides with the dev bar's zoom on top.
+local function combine(panel: Tuning.Overrides?, zoom: number?): Tuning.Overrides?
+	if not zoom then
+		return panel
+	end
+	local out: Tuning.Overrides = {}
+	if panel then
+		for section, values in panel do
+			out[section] = table.clone(values)
+		end
+	end
+	local arena: { [string]: any } = out.Arena or {}
+	arena.CamView = zoom
+	out.Arena = arena
+	return out
+end
+
+-- A new Run and its views, with the given tuning overrides (if any).
 -- The seed is the only randomness the Run gets; it's picked here, outside it.
 local function newSession(overrides: Tuning.Overrides?): Session
 	local folder = Instance.new("Folder")
@@ -84,12 +110,18 @@ end
 return function()
 	local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui") :: PlayerGui
 	Device.Setup(playerGui)
+	Stage.Light()
+	Stage.Sky(workspace, Vector2.zero, SKY_HALF)
 	local hud = Hud.new(playerGui)
 	local overlay = Overlay.new(playerGui)
 	local controls = PlayerInput.new(playerGui)
 	local camera = CameraView.new()
 
-	local overrides: Tuning.Overrides? = nil
+	local panelOverrides: Tuning.Overrides? = nil
+	local zoom: number? = nil -- the dev bar's CamView, or nil for the data's
+	local function overrides(): Tuning.Overrides?
+		return combine(panelOverrides, zoom)
+	end
 	local session = newSession()
 	local snapshot = session.run:Snapshot()
 	local state: State = "Start"
@@ -103,22 +135,22 @@ return function()
 
 	local function restart()
 		endSession(session)
-		session = newSession(overrides)
+		session = newSession(overrides())
 		snapshot = session.run:Snapshot()
 		play()
 	end
 
 	if RunService:IsStudio() then
 		TuningPanel.new(playerGui, function(changes: Tuning.Overrides)
-			overrides = changes
-			session.run:SetTuning(changes)
+			panelOverrides = changes
+			session.run:SetTuning(overrides())
 		end)
 		UserInputService.InputBegan:Connect(function(input: InputObject)
 			local recorder = session.recorder
 			if input.KeyCode == DUMP_KEY and recorder then
 				local recording = recorder:Finish(session.log, session.run)
 				print(`[Replay] seed {recording.Seed}, {#recording.Frames} frames, {#recording.Events} events:`)
-				if overrides and next(overrides) then
+				if panelOverrides and next(panelOverrides) then
 					warn("[Replay] the tuning panel changed values during this run, so it won't replay exactly")
 				end
 				print(Replay.Encode(recording))
@@ -126,11 +158,49 @@ return function()
 		end)
 	end
 
+	local tile: StyleTile.StyleTile? = nil
+	local showingTile = false
+	if DevBar.IsAllowed() then
+		DevBar.new(playerGui, {
+			{
+				name = "Zoom",
+				label = function()
+					return `Zoom {zoom or session.run:GetTuning().Arena.CamView}`
+				end,
+				onClick = function()
+					local current = zoom or session.run:GetTuning().Arena.CamView
+					local index = table.find(ZOOMS, current) or 0
+					zoom = ZOOMS[index % #ZOOMS + 1]
+					session.run:SetTuning(overrides())
+				end,
+			},
+			{
+				name = "StyleTile",
+				label = function()
+					return if showingTile then "Back to game" else "Style tile"
+				end,
+				onClick = function()
+					showingTile = not showingTile
+					local shown = tile or StyleTile.new()
+					tile = shown
+					if showingTile then
+						shown:Show()
+					else
+						shown:Hide()
+					end
+					hud:SetVisible(state == "Playing" and not showingTile)
+					overlay:SetSuppressed(showingTile)
+					controls:Reset()
+				end,
+			},
+		})
+	end
+
 	hud:SetVisible(false)
 	overlay:Show("KNG CHAK", "Defend the planet.\nTap to start", play)
 
 	RunService.RenderStepped:Connect(function(dt: number)
-		if state == "Playing" then
+		if state == "Playing" and not showingTile then
 			local input = controls:Read(snapshot.Ship.Position)
 			local recorder = session.recorder
 			if recorder then
@@ -152,7 +222,11 @@ return function()
 		end
 
 		local arena = session.run:GetTuning().Arena
-		camera:Update(snapshot.Ship.Position, arena, dt)
+		if showingTile and tile then
+			camera:LookAt(tile.Focus, arena)
+		else
+			camera:Update(snapshot.Ship.Position, arena, dt)
+		end
 		session.rings:Update(snapshot.Ship.Position, arena)
 		session.ship:Update(snapshot.Ship)
 		session.rocks:Update(snapshot.Rocks)

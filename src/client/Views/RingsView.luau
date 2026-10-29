@@ -5,9 +5,10 @@
 	    local rings = RingsView.new(folder)
 	    rings:Update(snapshot.Ship.Position, run:GetTuning().Arena) -- every frame
 
-	Each ring is a loop of thin parts at a radius taken from the arena values, so
-	changing a value moves its ring. The orbit band glows (it's energy); the edge
-	stays hidden until the ship is within EdgeShowDist of it, then fades in.
+	Each ring is a loop of parts at a radius taken from the arena values, so
+	changing a value moves its ring. The orbit band is a dashed loop of glowing
+	toy beads (it's energy); the edge is a thin solid line that stays hidden until
+	the ship is within EdgeShowDist of it, then fades in.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -19,7 +20,9 @@ local ViewMath = require(KngChak.Arena.ViewMath)
 
 local LIFT = 0.5 -- studs above the play plane
 local BAND_COLOR = Color3.fromHex("#6ff3ff")
-local BAND_TRANSPARENCY = 0.35
+local BAND_TRANSPARENCY = 0.25
+local BAND_DASHES = 36
+local BAND_DASH = Vector3.new(0.45, 0.3, 1.4) -- each bead's width, height and length
 local EDGE_COLOR = Color3.fromHex("#ffffff")
 local EDGE_MAX_OPACITY = 0.7
 
@@ -35,6 +38,7 @@ RingsView.__index = RingsView
 export type RingsView = typeof(setmetatable(
 	{} :: {
 		_parent: Instance,
+		_centre: Vector2,
 		_band: Ring?,
 		_edge: Ring?,
 		_edgeTransparency: number,
@@ -42,22 +46,26 @@ export type RingsView = typeof(setmetatable(
 	RingsView
 ))
 
+-- A ring of `segments` parts; with `dash` set, beads of that size with gaps, otherwise a solid line.
 local function buildRing(
 	parent: Instance,
+	centre: Vector2,
 	name: string,
 	radius: number,
 	width: number,
 	color: Color3,
-	neon: boolean
+	neon: boolean,
+	dash: Vector3?,
+	dashes: number?
 ): Ring
 	local model = Instance.new("Model")
 	model.Name = name
-	local segments = math.clamp(math.floor(radius * 1.5), 48, 128)
+	local segments = dashes or math.clamp(math.floor(radius * 1.5), 48, 128)
 	local length = 2 * math.pi * radius / segments * 1.04
 	local parts: { BasePart } = {}
 	for i = 1, segments do
 		local angle = (i - 0.5) / segments * 2 * math.pi
-		local position = Vector2.new(math.cos(angle), math.sin(angle)) * radius
+		local position = centre + Vector2.new(math.cos(angle), math.sin(angle)) * radius
 		local tangent = Vector2.new(-math.sin(angle), math.cos(angle))
 		local part = Instance.new("Part")
 		part.Anchored = true
@@ -67,7 +75,14 @@ local function buildRing(
 		part.CastShadow = false
 		part.Material = if neon then Enum.Material.Neon else Enum.Material.SmoothPlastic
 		part.Color = color
-		part.Size = Vector3.new(width, 0.15, length)
+		if dash then
+			part.Size = dash
+			local bead = Instance.new("SpecialMesh")
+			bead.MeshType = Enum.MeshType.Sphere
+			bead.Parent = part
+		else
+			part.Size = Vector3.new(width, 0.15, length)
+		end
 		part.CFrame = ArenaSpace.CFrameAt(position, tangent, LIFT)
 		part.Parent = model
 		table.insert(parts, part)
@@ -82,46 +97,56 @@ local function setTransparency(ring: Ring, transparency: number)
 	end
 end
 
-function RingsView.new(parent: Instance): RingsView
-	return setmetatable({ _parent = parent, _band = nil, _edge = nil, _edgeTransparency = -1 }, RingsView)
+-- Rings around `centre` (default: the arena's centre).
+function RingsView.new(parent: Instance, centre: Vector2?): RingsView
+	return setmetatable(
+		{ _parent = parent, _centre = centre or Vector2.zero, _band = nil, _edge = nil, _edgeTransparency = -1 },
+		RingsView
+	)
 end
 
 -- The ring if it's still at `radius`, otherwise a new one built there.
-local function ringAt(
-	parent: Instance,
-	ring: Ring?,
-	name: string,
-	radius: number,
-	width: number,
-	color: Color3,
-	neon: boolean
-): Ring
+local function ringAt(ring: Ring?, radius: number, build: () -> Ring): Ring
 	if ring and ring.radius == radius then
 		return ring
 	end
 	if ring then
 		ring.model:Destroy()
 	end
-	return buildRing(parent, name, radius, width, color, neon)
+	return build()
 end
 
 function RingsView.Update(self: RingsView, shipPosition: Vector2, arena: ArenaConfig.ArenaConfig)
 	local oldBand = self._band
-	local band =
-		ringAt(self._parent, oldBand, "OrbitBand", arena.PlanetRadius + arena.OrbitBandTop, 0.35, BAND_COLOR, true)
+	local bandRadius = arena.PlanetRadius + arena.OrbitBandTop
+	local band = ringAt(oldBand, bandRadius, function()
+		return buildRing(
+			self._parent,
+			self._centre,
+			"OrbitBand",
+			bandRadius,
+			0,
+			BAND_COLOR,
+			true,
+			BAND_DASH,
+			BAND_DASHES
+		)
+	end)
 	if band ~= oldBand then
 		setTransparency(band, BAND_TRANSPARENCY)
 		self._band = band
 	end
 
 	local oldEdge = self._edge
-	local edge = ringAt(self._parent, oldEdge, "ArenaEdge", arena.ArenaRadius, 0.5, EDGE_COLOR, false)
+	local edge = ringAt(oldEdge, arena.ArenaRadius, function()
+		return buildRing(self._parent, self._centre, "ArenaEdge", arena.ArenaRadius, 0.5, EDGE_COLOR, false)
+	end)
 	if edge ~= oldEdge then
 		self._edge = edge
 		self._edgeTransparency = -1
 	end
 
-	local visibility = ViewMath.EdgeVisibility(arena, shipPosition)
+	local visibility = ViewMath.EdgeVisibility(arena, shipPosition - self._centre)
 	local transparency = 1 - visibility * EDGE_MAX_OPACITY
 	if math.abs(transparency - self._edgeTransparency) > 0.01 then
 		setTransparency(edge, transparency)
