@@ -33,6 +33,12 @@ export type RunEvents = {
 	PlanetHit: Signal.Signal,
 
 	-- (rock: Rock, knock: Vector2)
+	-- The spear hit a rock it can't break yet (see RockTypes' BreaksBy): an unpushed comet,
+	-- unprimed iron hit by a plain ram, gold without a PERFECT. The ship is knocked back
+	-- by knock and briefly stunned; the rock is deflected.
+	RockClanged: Signal.Signal,
+
+	-- (rock: Rock, knock: Vector2)
 	-- A rock hit the ship's back half, or its soft nose. knock is the velocity the ship is knocked away with.
 	ShipBumped: Signal.Signal,
 
@@ -94,6 +100,7 @@ RunEvents.Names = table.freeze({
 	"RockPrimed",
 	"RockFlared",
 	"PlanetHit",
+	"RockClanged",
 	"ShipBumped",
 	"OrbitLocked",
 	"OrbitLeft",

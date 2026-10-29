@@ -4,11 +4,16 @@
 
 	- Ram: with the spear out (boosting or slingshotting), a rock touching the front
 	  half of the ship (within BreakArcDeg of the nose, or on the spear itself) breaks.
+	- Clang: unless the rock's type can't be broken that way yet (its BreaksBy): an
+	  unpushed comet, iron that's neither primed nor hit by a slingshot, gold
+	  without a PERFECT. Then the spear clangs off: the ship is knocked back and
+	  briefly stunned, and the rock is deflected.
 	- Bump: a rock touching the back half, or touching the soft nose when the spear
 	  is in, knocks the ship away, stuns it for StunTime and loses the combo.
 	- Push: the flame behind the ship is the push zone. A rock inside its cone and
 	  reach is shoved away from the ship and the planet (scaled by its type's
-	  PushFactor) and becomes primed for PrimedTime.
+	  PushFactor) and becomes primed for PrimedTime. A pushed comet slows to its
+	  slow fall speed for good.
 	- Flare: in orbit the flame fans outward instead (FlareRange, FlareConeDeg). A
 	  rock it touches is primed, pops up at FlareLift and hangs nearly still for
 	  FlareHang, ready for a slingshot. Flaring frees the ship from capture, so the
@@ -50,6 +55,11 @@ local function push(ship: Ship.Ship, rock: Rock.Rock, ctx: Context.Context)
 	local config = tuning.Ship
 	rock.PushCooldown = config.PushCooldown
 	local outward = rock.Position.Unit
+	local slowFall = rock.Type.SlowFallSpeed
+	if slowFall then
+		rock.FallSpeed = slowFall
+		rock.Velocity *= 0.3
+	end
 	if flare then
 		rock.IsFlared = true
 		rock.HangTime = config.FlareHang
@@ -87,6 +97,37 @@ local function bump(ship: Ship.Ship, rock: Rock.Rock, toRock: Vector2, ctx: Cont
 	rock.Velocity += toRock * 3
 	ctx.events.ShipBumped:Fire(Rock.Snapshot(rock), knock)
 	Combo.Lose(ctx.combo, ctx.events, "Bump")
+end
+
+-- True when the spear can break `rock` right now.
+local function canBreak(ship: Ship.Ship, rock: Rock.Rock): boolean
+	local rule = rock.Type.BreaksBy
+	if rule == "Primed" then
+		return rock.IsPrimed
+	elseif rule == "PrimedOrDive" then
+		return rock.IsPrimed or ship.IsSlingshotting
+	elseif rule == "Perfect" then
+		return rock.IsPrimed and ship.IsSlingshotting
+	end
+	return true
+end
+
+-- The spear glances off a rock it can't break: knocked back, briefly stunned, the rock deflected.
+local function clang(ship: Ship.Ship, rock: Rock.Rock, toRock: Vector2, ctx: Context.Context)
+	local config = ctx.tuning.Ship
+	local knock = -toRock * config.ClangKnock
+	ship.Velocity = knock
+	ship.OrbitSpeed *= 0.5
+	ship.StunTime = math.max(ship.StunTime, config.ClangStunTime)
+	ship.InvulnerableTime = config.ClangStunTime + 0.4
+	ship.BoostTime = 0
+	ship.SlingshotTime = 0
+	ship.IsBoosting = false
+	ship.IsSlingshotting = false
+	ship.IsSpearOut = false
+	ship.IsStunned = true
+	rock.Velocity += toRock * 2
+	ctx.events.RockClanged:Fire(Rock.Snapshot(rock), knock)
 end
 
 -- Breaks `rock` and pays out for how it broke. Returns the score it earned.
@@ -149,9 +190,11 @@ function Combat.Step(ship: Ship.Ship, ctx: Context.Context): Result
 		if touchesBody or touchesSpear then
 			local toRock = if distance > 1e-3 then offset / distance else facing
 			local front = touchesSpear or distance < 1e-3 or along / distance >= cosBreak
-			if hard and front then
+			if hard and front and canBreak(ship, rock) then
 				score += breakRock(ship, rock, ctx)
 				continue
+			elseif hard and front then
+				clang(ship, rock, toRock, ctx)
 			elseif ship.InvulnerableTime <= 0 then
 				bump(ship, rock, toRock, ctx)
 			end

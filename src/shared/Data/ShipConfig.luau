@@ -60,6 +60,8 @@ local ShipConfig = {
 	-- Bump
 	StunTime = 0.6, -- seconds without control after a bump
 	BumpKnock = 14, -- speed the ship is knocked away at
+	ClangKnock = 12, -- a ram that can't break the rock (an unpushed comet, plain iron) knocks you back this fast...
+	ClangStunTime = 0.3, -- ...and stuns you this long (a clang keeps the combo)
 
 	-- Push (the flame is the push zone)
 	PushRangeMin = 5, -- flame reach at the lowest throttle...

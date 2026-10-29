@@ -10,11 +10,19 @@
 	never changes it.
 ]]
 
+-- What it takes to break a rock with the spear; anything less clangs off it.
+--   Any           any boosted ram or slingshot
+--   Primed        only once primed (a comet is too fast to ram until a push slows it)
+--   PrimedOrDive  once primed, or by a slingshot (iron)
+--   Perfect       only a PERFECT: primed, then slingshot (gold)
+export type BreaksBy = "Any" | "Primed" | "PrimedOrDive" | "Perfect"
+
 export type RockType = {
 	Id: string,
 	Radius: number, -- arena units (the prototype's `size` is a radius)
 	FallSpeed: number, -- arena units per second toward the planet, at wave 1
 	SlowFallSpeed: number?, -- comet only: fall speed after it has been pushed
+	BreaksBy: BreaksBy,
 	Tint: Color3, -- body colour; the rock view paints the model's Body parts with it
 	Glow: Color3?, -- energy glow, for rocks that have one (the comet's tail)
 	IsMetal: boolean,
@@ -30,6 +38,7 @@ end
 local RockTypes = {
 	Rock = define({
 		Id = "Rock",
+		BreaksBy = "Any",
 		Radius = 1.4,
 		FallSpeed = 3.0,
 		Tint = Color3.fromHex("#c98b55"),
@@ -40,6 +49,7 @@ local RockTypes = {
 	}),
 	Comet = define({
 		Id = "Comet",
+		BreaksBy = "Primed",
 		Radius = 1.1,
 		FallSpeed = 7.5,
 		SlowFallSpeed = 2.0,
@@ -52,6 +62,7 @@ local RockTypes = {
 	}),
 	Iron = define({
 		Id = "Iron",
+		BreaksBy = "PrimedOrDive",
 		Radius = 1.8,
 		FallSpeed = 1.8,
 		Tint = Color3.fromHex("#7487a3"),
@@ -62,6 +73,7 @@ local RockTypes = {
 	}),
 	Cluster = define({
 		Id = "Cluster",
+		BreaksBy = "Any",
 		Radius = 2.4,
 		FallSpeed = 2.6,
 		Tint = Color3.fromHex("#b25fd0"),
@@ -72,6 +84,7 @@ local RockTypes = {
 	}),
 	Shard = define({
 		Id = "Shard",
+		BreaksBy = "Any",
 		Radius = 0.85,
 		FallSpeed = 3.5,
 		Tint = Color3.fromHex("#e8b27a"),
@@ -82,6 +95,7 @@ local RockTypes = {
 	}),
 	Gold = define({
 		Id = "Gold",
+		BreaksBy = "Perfect",
 		Radius = 1.5,
 		FallSpeed = 2.4,
 		Tint = Color3.fromHex("#ffcf2e"),
