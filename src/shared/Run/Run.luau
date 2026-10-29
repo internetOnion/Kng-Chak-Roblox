@@ -2,14 +2,22 @@
 --[[
 	Run: one emergency call, as a headless simulation.
 
-	    local run = Run.new({
-	        Rocks = { { Type = RockTypes.Rock, Position = Vector2.new(0, 40) } },
-	    })
+	    local run = Run.new({ Seed = 7 })
 	    run.Events.PlanetHit:Connect(function(rock, damagePercent) ... end)
 
 	    -- every frame:
 	    run:Step(input, dt)
 	    local snapshot = run:Snapshot()
+
+	    -- choices that aren't flight input are commands:
+	    run:PickUpgrade(2)     -- when snapshot.Phase is "UpgradePick"
+	    run:SetPaused(true)
+
+	A call is waves 1 to WaveConfig.LastWave, an upgrade pick after each, then the
+	Inferno (see Boss/Inferno). It's won when the Inferno's core cracks and lost
+	when planet HP reaches 0; either way RunFinished fires with the run's summary.
+	A guided call (Mode "Guided", see Run/Guided) teaches the moves instead, with a
+	planet that can't be damaged.
 
 	The Run holds the game rules. It knows nothing about Parts, cameras or GUIs and
 	creates no Instances: views read its snapshot and events and never change it.
@@ -20,7 +28,11 @@
 local Combat = require("../Combat/Combat")
 local Combo = require("../Combat/Combo")
 local Context = require("./Context")
+local Deck = require("../Upgrades/Deck")
 local Flight = require("../Ship/Flight")
+local Guided = require("./Guided")
+local GuidedConfig = require("../Data/GuidedConfig")
+local Inferno = require("../Boss/Inferno")
 local PlanetHealth = require("../Combat/PlanetHealth")
 local Rng = require("../Util/Rng")
 local Rock = require("../Rocks/Rock")
@@ -30,12 +42,16 @@ local RunInput = require("./RunInput")
 local Ship = require("../Ship/Ship")
 local Threat = require("../Rocks/Threat")
 local Tuning = require("./Tuning")
+local Upgrades = require("../Data/Upgrades")
 local WaveDirector = require("../Rocks/WaveDirector")
 
 local STEP = 1 / 60 -- seconds per fixed sub-step
 local MAX_FRAME = 0.25 -- a longer frame (a hitch) only advances this much, so nothing teleports
 local EPSILON = 1e-9 -- absorbs float error, so 1/30 s always makes exactly two sub-steps
-local COMBAT_SEED_OFFSET = 7919 -- combat's RNG is seeded apart from the waves', so splits don't change spawns
+-- Each kind of random choice has its own RNG, seeded apart, so one never changes another's draws.
+local COMBAT_SEED_OFFSET = 7919 -- where shards fly, what the Inferno sheds
+local UPGRADE_SEED_OFFSET = 104729 -- which cards are offered
+local BOSS_SEED_OFFSET = 1299709 -- where the Inferno comes in
 
 export type Input = RunInput.RunInput
 
@@ -46,22 +62,69 @@ export type RockSetup = {
 
 export type WavePlan = WaveDirector.WavePlan
 
--- Playing a wave, between waves, or over (planet HP reached 0).
-export type Phase = WaveDirector.Phase | "Over"
+-- "Call": an emergency call (waves, then the Inferno). "Guided": the guided first call.
+export type Mode = "Call" | "Guided"
+
+-- Playing a wave, between waves, picking an upgrade, fighting the Inferno, or finished.
+export type Phase = "Playing" | "Breather" | "UpgradePick" | "Boss" | "Won" | "Over"
 
 export type Setup = {
 	Seed: number?, -- seeds every random choice the run makes (default 1)
+	Mode: Mode?, -- default "Call"
 	Waves: { WavePlan }?, -- fixed waves instead of the wave data's; {} plays none
+	StartWave: number?, -- with the wave data's waves: start the call at this wave (default 1)
+	Boss: boolean?, -- the Inferno comes after the last wave (default: with the data's waves only)
+	BossAngle: number?, -- radians: where the Inferno comes in from (default: random)
+	Offers: boolean?, -- offer upgrade cards after each wave (default true)
+	Upgrades: { [string]: number }?, -- upgrades already picked at the start: id -> stacks
 	Rocks: { RockSetup }?, -- rocks already in the arena when the run starts
 	ShipStart: Vector2?, -- default: the arena data's ShipStart
 	ShipHeading: number?, -- radians; default: nose straight down the screen
 	Tuning: Tuning.Overrides?, -- changes to the data's tuning values for this run
 }
 
+-- How a call went: what the results screen shows, and what RunFinished carries.
+export type Summary = {
+	Mode: Mode,
+	Won: boolean,
+	Wave: number, -- the wave reached (LastWave + 1 once the Inferno came)
+	Score: number,
+	BestCombo: number,
+	Perfects: number,
+	Time: number, -- seconds of play
+}
+
+-- The Inferno as other code may read it.
+export type BossSnapshot = {
+	Phase: number, -- 1 armour, 2 burn-off, 3 core
+	Position: Vector2,
+	Radius: number, -- the body's
+	PlatesLeft: number,
+	Plates: number,
+	CoreHitsLeft: number,
+	CoreHits: number,
+	IsHolding: boolean,
+	TimeToImpact: number, -- seconds, at this phase's speed
+}
+
+export type GuidedSnapshot = {
+	Step: number,
+	StepName: string?, -- "Move", "Boost", "PushBreak" or "Slingshot"; nil once done
+	Steps: number,
+	Beacon: Vector2?,
+	DummyId: number?,
+}
+
 -- What other code may read. Rebuilt on every Snapshot() call; changing it changes nothing.
 export type Snapshot = {
+	Mode: Mode,
 	Wave: number, -- 0 before the first wave starts
+	LastWave: number, -- the last wave before the Inferno (0 with no waves)
 	Phase: Phase,
+	IsPaused: boolean,
+	WaveIntro: string?, -- the rock type id the current (or announced) wave introduces
+	WaveModifiers: { string }, -- the current (or announced) wave's modifier ids
+	IsSurge: boolean,
 	Score: number,
 	Combo: number, -- the current chain (0 when there's none)
 	BestCombo: number, -- the highest the combo reached this run
@@ -74,6 +137,11 @@ export type Snapshot = {
 	FuelMax: number,
 	Rocks: { Rock.Rock },
 	ThreatId: number?, -- the rock that will hit the planet soonest (see Rocks/Threat), if any
+	Offer: { string }?, -- upgrade ids on offer, while Phase is "UpgradePick"
+	Upgrades: { [string]: number }, -- upgrades picked so far: id -> stacks
+	Boss: BossSnapshot?,
+	Guided: GuidedSnapshot?,
+	Time: number, -- seconds of play
 }
 
 local Run = {}
@@ -84,21 +152,41 @@ Run.IdleInput = RunInput.Idle
 export type Run = typeof(setmetatable(
 	{} :: {
 		Events: RunEvents.RunEvents,
+		_mode: Mode,
 		_tuning: Tuning.Tuning,
+		_overrides: Tuning.Overrides?,
+		_upgrades: { [string]: number },
+		_modifiers: { string }, -- the modifiers the tuning was last built with
+		_tunedWave: number, -- the wave the tuning was last built for
 		_planet: PlanetHealth.PlanetHealth,
 		_ship: Ship.Ship,
 		_rocks: { Rock.Rock },
-		_ctx: Context.Context, -- handed to flight and combat; its rocks are kept in step with _rocks
+		_ctx: Context.Context, -- handed to inner modules; its rocks are kept in step with _rocks
 		_combo: Combo.Combo,
 		_nextRockId: number,
 		_director: WaveDirector.WaveDirector,
+		_lastWave: number,
+		_bossEnabled: boolean,
+		_boss: Inferno.Inferno?,
+		_bossRng: Rng.Rng,
+		_bossAngle: number?,
+		_offers: boolean,
+		_offerRng: Rng.Rng,
+		_offer: { string }?,
+		_handledWave: number, -- the last cleared wave whose surge heal and offer are dealt with
+		_guide: Guided.Guided?,
 		_score: number,
-		_over: boolean,
+		_perfects: number,
+		_time: number,
+		_finished: ("Won" | "Over")?,
+		_paused: boolean,
 		_pending: number, -- frame time not simulated yet, less than one sub-step
 		_boostQueued: boolean, -- a boost press waiting for the next sub-step
 	},
 	Run
 ))
+
+local NO_MODIFIERS = table.freeze({}) :: { string }
 
 local function newRock(
 	self: Run,
@@ -113,8 +201,59 @@ local function newRock(
 	return rock
 end
 
-local function addRock(self: Run, rockType: RockTypes.RockType, position: Vector2, speedMult: number?)
-	table.insert(self._rocks, newRock(self, rockType, position, speedMult))
+local function setRocks(self: Run, rocks: { Rock.Rock })
+	self._rocks = rocks
+	self._ctx.rocks = rocks
+end
+
+local function addRock(self: Run, rock: Rock.Rock)
+	table.insert(self._rocks, rock)
+end
+
+-- Rebuilds the tuning from the data, the overrides, the current wave's modifiers and the upgrades.
+local function retune(self: Run)
+	local fuelMax = if self._tuning then self._tuning.Ship.FuelMax else nil
+	self._tuning = Tuning.new(self._overrides, { Upgrades = self._upgrades, Modifiers = self._modifiers })
+	self._ctx.tuning = self._tuning
+	self._planet:SetMaxShield(self._tuning.Arena.PlanetMaxShield)
+	local ship = self._ship
+	local newMax = self._tuning.Ship.FuelMax
+	if fuelMax and newMax > fuelMax then
+		ship.Fuel += newMax - fuelMax -- a bigger tank comes full
+	end
+	ship.Fuel = math.min(ship.Fuel, newMax)
+end
+
+local function summary(self: Run): Summary
+	local boss = self._boss
+	return table.freeze({
+		Mode = self._mode,
+		Won = self._finished == "Won",
+		Wave = if boss then self._lastWave + 1 else self._director.Wave,
+		Score = self._score,
+		BestCombo = self._combo.Best,
+		Perfects = self._perfects,
+		Time = self._time,
+	})
+end
+
+local function finish(self: Run, how: "Won" | "Over")
+	if self._finished then
+		return
+	end
+	self._finished = how
+	if how == "Over" then
+		self.Events.GameOver:Fire(self._director.Wave)
+	end
+	self.Events.RunFinished:Fire(summary(self))
+end
+
+local function damagePlanet(self: Run, amount: number)
+	self._planet:TakeDamage(amount)
+	Combo.Lose(self._combo, self.Events, "Impact")
+	if self._planet:IsDepleted() then
+		finish(self, "Over")
+	end
 end
 
 local function stepRocks(self: Run, dt: number)
@@ -123,58 +262,154 @@ local function stepRocks(self: Run, dt: number)
 	for _, rock in self._rocks do
 		Rock.Fall(rock, self._tuning, dt)
 		if Rock.TouchesPlanet(rock, planetRadius) then
-			local damage = rock.Type.DamagePercent
-			self.Events.PlanetHit:Fire(Rock.Snapshot(rock), damage)
-			self._planet:TakeDamage(damage)
-			Combo.Lose(self._combo, self.Events, "Impact")
-			if self._planet:IsDepleted() and not self._over then
-				self._over = true
-				self.Events.GameOver:Fire(self._director.Wave)
+			if self._mode ~= "Guided" then -- the guided call's planet can't be damaged
+				local damage = rock.Type.DamagePercent
+				self.Events.PlanetHit:Fire(Rock.Snapshot(rock), damage)
+				damagePlanet(self, damage)
 			end
 		else
 			table.insert(survivors, rock)
 		end
 	end
-	self._rocks = survivors
-	self._ctx.rocks = survivors
+	setRocks(self, survivors)
 end
 
-local function tick(self: Run, input: Input, dt: number)
-	local boostPressed = self._boostQueued
-	self._boostQueued = false
-	Flight.Step(self._ship, self._ctx, input, boostPressed, dt)
-	stepRocks(self, dt)
-	if self._over then
+local function stepBoss(self: Run, dt: number)
+	local boss = self._boss
+	if not boss then
+		if self._bossEnabled and self._director.Phase == "Done" then
+			self._modifiers = NO_MODIFIERS
+			retune(self)
+			local angle = self._bossAngle or self._bossRng:Next() * 2 * math.pi
+			local spawned, plates = Inferno.new(self._ctx, angle)
+			self._boss = spawned
+			for _, plate in plates do
+				addRock(self, plate)
+			end
+		end
 		return
 	end
-	local combat = Combat.Step(self._ship, self._ctx)
-	self._rocks = combat.survivors
-	self._ctx.rocks = combat.survivors
-	self._score += combat.score
-	Combo.Step(self._combo, self.Events, #self._rocks > 0, dt)
-	self._director:Step(dt, {
+	local result = Inferno.Step(boss, self._ctx, dt)
+	for _, rock in result.added do
+		addRock(self, rock)
+	end
+	if result.contactDamage > 0 then
+		self.Events.BossHit:Fire(result.contactDamage)
+		damagePlanet(self, result.contactDamage)
+	end
+	if boss.IsDefeated then
+		finish(self, "Won")
+	end
+end
+
+-- After a wave clears: the surge heal, then the upgrade offer (or straight on to the next wave).
+local function afterWave(self: Run)
+	local director = self._director
+	if director.Phase ~= "Cleared" or director.Wave == 0 or self._handledWave == director.Wave then
+		return
+	end
+	self._handledWave = director.Wave
+	if WaveDirector.IsSurge(self._tuning, director.Wave) then
+		local heal = self._tuning.Waves.SurgeHeal
+		self._planet:Heal(heal)
+		self.Events.Healed:Fire(heal, "Surge")
+	end
+	local cards = if self._offers then Deck.Draw(self._offerRng, self._upgrades, Upgrades.OfferSize) else {}
+	if #cards > 0 then
+		self._offer = cards
+		self.Events.UpgradeOffered:Fire(cards)
+	end
+end
+
+local function directorContext(self: Run): WaveDirector.Context
+	return {
 		tuning = self._tuning,
 		events = self.Events,
 		rockCount = #self._rocks,
 		shipPosition = self._ship.Position,
 		spawn = function(rockType: RockTypes.RockType, position: Vector2, speedMult: number)
-			addRock(self, rockType, position, speedMult)
+			addRock(self, newRock(self, rockType, position, speedMult))
 		end,
-	})
+	}
+end
+
+local function tick(self: Run, input: Input, dt: number)
+	local boostPressed = self._boostQueued
+	self._boostQueued = false
+	self._time += dt
+	Flight.Step(self._ship, self._ctx, input, boostPressed, dt)
+	stepRocks(self, dt)
+	if self._finished then
+		return
+	end
+	stepBoss(self, dt)
+	if self._finished then
+		return
+	end
+	local combat = Combat.Step(self._ship, self._ctx)
+	setRocks(self, combat.survivors)
+	self._score += combat.score
+	Combo.Step(self._combo, self.Events, #self._rocks > 0, dt)
+
+	local guide = self._guide
+	if guide then
+		local dummy = Guided.Step(guide, self._ship, self._ctx)
+		if dummy then
+			addRock(self, dummy)
+		end
+		if guide.IsDone then
+			finish(self, "Won")
+		end
+		return
+	end
+
+	local director = self._director
+	if director.Phase == "Cleared" and director.Wave > 0 and not self._offer then
+		director:Continue(directorContext(self)) -- no upgrade left to offer
+	end
+	director:Step(dt, directorContext(self))
+	if director.Wave ~= self._tunedWave then
+		self._tunedWave = director.Wave
+		local plan = director.Plan
+		self._modifiers = if plan and plan.Modifiers then plan.Modifiers else NO_MODIFIERS
+		retune(self)
+	end
+	afterWave(self)
 end
 
 function Run.new(setup: Setup?): Run
-	local tuning = Tuning.new(setup and setup.Tuning)
+	local seed = setup and setup.Seed or 1
+	local mode: Mode = setup and setup.Mode or "Call"
+	local guided = mode == "Guided"
+	local overrides = setup and setup.Tuning
+	local upgrades = table.clone(setup and setup.Upgrades or {})
+	local tuning = Tuning.new(overrides, { Upgrades = upgrades })
 	local events = RunEvents.new()
 	local rocks = {}
-	local planet = PlanetHealth.new(tuning.Arena.PlanetMaxHp, tuning.Arena.PlanetMaxShield)
+	local startHp = if guided then GuidedConfig.StartHp else nil
+	local planet = PlanetHealth.new(tuning.Arena.PlanetMaxHp, tuning.Arena.PlanetMaxShield, startHp)
 	planet.ShieldChanged:Connect(function(shield: number, delta: number)
 		events.ShieldChanged:Fire(shield, delta)
 	end)
+
+	-- With the data's waves the call runs to LastWave, from StartWave; fixed waves play as given.
+	local fixed = if guided then {} else setup and setup.Waves
+	local lastWave = if fixed then #fixed else tuning.Waves.LastWave
+	local director = WaveDirector.new(Rng.new(seed), fixed, if fixed then nil else lastWave)
+	if not fixed and setup and setup.StartWave then
+		director.Wave = setup.StartWave - 1
+	end
+	local bossEnabled = not guided and (if setup and setup.Boss ~= nil then setup.Boss else fixed == nil)
+
 	local combo = Combo.new()
 	local self = setmetatable({
 		Events = events,
+		_mode = mode,
 		_tuning = tuning,
+		_overrides = overrides,
+		_upgrades = upgrades,
+		_modifiers = NO_MODIFIERS,
+		_tunedWave = director.Wave,
 		_planet = planet,
 		_ship = Ship.new(
 			setup and setup.ShipStart or tuning.Arena.ShipStart,
@@ -185,13 +420,25 @@ function Run.new(setup: Setup?): Run
 		_ctx = nil :: any, -- set just below: it needs the Run
 		_combo = combo,
 		_nextRockId = 1,
-		_director = WaveDirector.new(Rng.new(setup and setup.Seed or 1), setup and setup.Waves),
+		_director = director,
+		_lastWave = lastWave,
+		_bossEnabled = bossEnabled,
+		_boss = nil :: Inferno.Inferno?,
+		_bossRng = Rng.new(seed + BOSS_SEED_OFFSET),
+		_bossAngle = setup and setup.BossAngle,
+		_offers = not guided and (setup == nil or setup.Offers ~= false),
+		_offerRng = Rng.new(seed + UPGRADE_SEED_OFFSET),
+		_offer = nil :: { string }?,
+		_handledWave = director.Wave,
+		_guide = nil :: Guided.Guided?,
 		_score = 0,
-		_over = false,
+		_perfects = 0,
+		_time = 0,
+		_finished = nil :: ("Won" | "Over")?,
+		_paused = false,
 		_pending = 0,
 		_boostQueued = false,
 	}, Run)
-	local seed = setup and setup.Seed or 1
 	self._ctx = {
 		tuning = tuning,
 		events = events,
@@ -209,18 +456,29 @@ function Run.new(setup: Setup?): Run
 			return newRock(self, rockType, position, speedMult, velocity, grace)
 		end,
 	}
+	events.Perfect:Connect(function()
+		self._perfects += 1
+	end)
+	if guided then
+		self._guide = Guided.new(self._ctx)
+	end
 	local startRocks = setup and setup.Rocks
 	if startRocks then
 		for _, rock in startRocks do
-			addRock(self, rock.Type, rock.Position)
+			addRock(self, newRock(self, rock.Type, rock.Position))
 		end
 	end
 	return self
 end
 
--- Advances the run by dt seconds of play, with this frame's input. Once the run is over, does nothing.
+-- True while nothing moves: paused, picking an upgrade, or finished.
+local function frozen(self: Run): boolean
+	return self._paused or self._offer ~= nil or self._finished ~= nil
+end
+
+-- Advances the run by dt seconds of play, with this frame's input. Does nothing while frozen (see Snapshot).
 function Run.Step(self: Run, input: Input, dt: number)
-	if self._over then
+	if frozen(self) then
 		return
 	end
 	if input.BoostPressed then
@@ -228,10 +486,85 @@ function Run.Step(self: Run, input: Input, dt: number)
 		self._boostQueued = true
 	end
 	self._pending += math.clamp(dt, 0, MAX_FRAME)
-	while self._pending >= STEP - EPSILON and not self._over do
+	while self._pending >= STEP - EPSILON and not frozen(self) do
 		self._pending = math.max(0, self._pending - STEP)
 		tick(self, input, STEP)
 	end
+end
+
+--[[
+	Picks card `index` (1-based) of the upgrade offer, while Phase is "UpgradePick".
+	The upgrade applies straight away and the next wave is announced. Returns
+	whether there was such a card.
+]]
+function Run.PickUpgrade(self: Run, index: number): boolean
+	local offer = self._offer
+	local id = offer and offer[index]
+	if not id then
+		return false
+	end
+	self._offer = nil
+	self._upgrades[id] = (self._upgrades[id] or 0) + 1
+	retune(self)
+	self.Events.UpgradePicked:Fire(id, self._upgrades[id])
+	self._director:Continue(directorContext(self))
+	return true
+end
+
+-- Pauses or resumes the run. While paused, Step does nothing, so it resumes exactly where it was.
+function Run.SetPaused(self: Run, paused: boolean)
+	self._paused = paused
+end
+
+-- How the run has gone so far (final once it's finished).
+function Run.Summary(self: Run): Summary
+	return summary(self)
+end
+
+local function phase(self: Run): Phase
+	if self._finished then
+		return self._finished :: Phase
+	elseif self._offer then
+		return "UpgradePick"
+	elseif self._boss then
+		return "Boss"
+	elseif self._director.Phase == "Playing" or self._guide then
+		return "Playing"
+	end
+	return "Breather"
+end
+
+local function bossSnapshot(self: Run): BossSnapshot?
+	local boss = self._boss
+	if not boss then
+		return nil
+	end
+	local config = self._tuning.Inferno
+	return table.freeze({
+		Phase = boss.Phase,
+		Position = boss.Position,
+		Radius = config.BodyRadius,
+		PlatesLeft = Inferno.PlatesLeft(boss, self._ctx),
+		Plates = #boss.PlateIds,
+		CoreHitsLeft = boss.CoreHitsLeft,
+		CoreHits = config.CoreHits,
+		IsHolding = boss.IsHolding,
+		TimeToImpact = Inferno.TimeToImpact(boss, self._ctx),
+	})
+end
+
+local function guidedSnapshot(self: Run): GuidedSnapshot?
+	local guide = self._guide
+	if not guide then
+		return nil
+	end
+	return table.freeze({
+		Step = guide.Step,
+		StepName = Guided.StepName(guide.Step),
+		Steps = #GuidedConfig.Steps,
+		Beacon = guide.Beacon,
+		DummyId = guide.DummyId,
+	})
 end
 
 function Run.Snapshot(self: Run): Snapshot
@@ -240,9 +573,17 @@ function Run.Snapshot(self: Run): Snapshot
 		table.insert(rocks, Rock.Snapshot(rock))
 	end
 	local threat = Threat.Soonest(self._rocks, self._tuning.Arena.PlanetRadius)
+	local plan = self._director.Plan
+	local wave = if plan then plan.Wave else self._director.Wave
 	return table.freeze({
+		Mode = self._mode,
 		Wave = self._director.Wave,
-		Phase = (if self._over then "Over" else self._director.Phase) :: Phase,
+		LastWave = self._lastWave,
+		Phase = phase(self),
+		IsPaused = self._paused,
+		WaveIntro = if plan then plan.Intro else nil,
+		WaveModifiers = if plan and plan.Modifiers then plan.Modifiers else NO_MODIFIERS,
+		IsSurge = WaveDirector.IsSurge(self._tuning, wave),
 		Score = self._score,
 		Combo = self._combo.Count,
 		BestCombo = self._combo.Best,
@@ -255,6 +596,11 @@ function Run.Snapshot(self: Run): Snapshot
 		FuelMax = self._tuning.Ship.FuelMax,
 		Rocks = table.freeze(rocks),
 		ThreatId = if threat then threat.Id else nil,
+		Offer = self._offer,
+		Upgrades = table.freeze(table.clone(self._upgrades)),
+		Boss = bossSnapshot(self),
+		Guided = guidedSnapshot(self),
+		Time = self._time,
 	})
 end
 
@@ -265,8 +611,8 @@ end
 
 -- Replaces this run's tuning overrides (Studio tuning panel). The data modules don't change.
 function Run.SetTuning(self: Run, overrides: Tuning.Overrides?)
-	self._tuning = Tuning.new(overrides)
-	self._ctx.tuning = self._tuning
+	self._overrides = overrides
+	retune(self)
 end
 
 function Run.Destroy(self: Run)

@@ -14,7 +14,7 @@
 --   Any           any boosted ram or slingshot
 --   Primed        only once primed (a comet is too fast to ram until a push slows it)
 --   PrimedOrDive  once primed, or by a slingshot (iron)
---   Perfect       only a PERFECT: primed, then slingshot (gold)
+--   Perfect       only a PERFECT: primed, then slingshot (gold, the Inferno's core)
 export type BreaksBy = "Any" | "Primed" | "PrimedOrDive" | "Perfect"
 
 -- What a rock breaks into (a cluster's shards).
@@ -39,6 +39,7 @@ export type RockType = {
 	PushFactor: number, -- how far a flame push moves it (1 = normal, lower = moves less)
 	DamagePercent: number, -- planet HP lost when it hits
 	Split: Split?, -- breaking it splits it into shards
+	IsBossPart: boolean?, -- part of the Inferno: it rides on the boss and never falls on its own
 }
 
 local function define(def: RockType): RockType
@@ -115,6 +116,33 @@ local RockTypes = {
 		Score = 500,
 		PushFactor = 0.7,
 		DamagePercent = 8,
+	}),
+	-- The Inferno's parts (see Boss/Inferno). They ride on the boss, so FallSpeed and DamagePercent are unused.
+	Plate = define({
+		Id = "Plate",
+		BreaksBy = "Primed",
+		Radius = 1.7,
+		FallSpeed = 0,
+		Tint = Color3.fromHex("#5a2a1e"),
+		Glow = Color3.fromHex("#ff6a1f"),
+		IsMetal = true,
+		Score = 300,
+		PushFactor = 0,
+		DamagePercent = 0,
+		IsBossPart = true,
+	}),
+	Core = define({
+		Id = "Core",
+		BreaksBy = "Perfect",
+		Radius = 2.6,
+		FallSpeed = 0,
+		Tint = Color3.fromHex("#7487a3"),
+		Glow = Color3.fromHex("#ffe066"),
+		IsMetal = true,
+		Score = 1000,
+		PushFactor = 0,
+		DamagePercent = 0,
+		IsBossPart = true,
 	}),
 }
 
