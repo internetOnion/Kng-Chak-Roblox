@@ -14,6 +14,7 @@
 	    ship.Fuel        number   0..ShipConfig.FuelMax
 	    ship.IsStunned   boolean  after a bad bump: no control, grey flame
 	    ship.FlameReach  number   how far the flame (the push zone) reaches from the ship's centre
+	    ship.IsInOrbit   boolean  locked onto the orbit track (it can't touch the planet)
 ]]
 
 export type Ship = {
@@ -32,6 +33,11 @@ export type Ship = {
 	ExitTime: number, -- seconds left of the boost's exit (sharper turning and grip)
 	StunTime: number, -- seconds of stun left
 	InvulnerableTime: number, -- seconds left in which rocks can't bump the ship again
+	IsInOrbit: boolean,
+	OrbitDir: number, -- 1 = anticlockwise round the planet, -1 = clockwise
+	OrbitSpeed: number, -- speed along the orbit track
+	OrbitTime: number, -- seconds since locking on
+	OrbitRelock: number, -- seconds left before the band can lock the ship again
 }
 
 local Ship = {}
@@ -55,6 +61,11 @@ function Ship.new(position: Vector2, fuel: number, heading: number?): Ship
 		ExitTime = 0,
 		StunTime = 0,
 		InvulnerableTime = 0,
+		IsInOrbit = false,
+		OrbitDir = 1,
+		OrbitSpeed = 0,
+		OrbitTime = 0,
+		OrbitRelock = 0,
 	}
 end
 

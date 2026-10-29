@@ -5,15 +5,20 @@
 	The nose turns toward where the player steers and the engine only thrusts once
 	the nose is within the thrust cone, so the ship flies like a rocket, not a cursor.
 	Boost is a short burst at boost speed that costs fuel; holding it keeps it going
-	while fuel lasts. The ship slides along the arena edge and never goes below the
-	orbit track, so it can't leave the arena or hit the planet.
+	while fuel lasts. The ship slides along the arena edge, so it can't leave the
+	arena. Flying into the orbit band locks it onto the orbit (see Ship/Orbit), so
+	it can't hit the planet either; there, fuel refills OrbitRegenMult times faster.
 ]]
 
+local Context = require("../Run/Context")
+local Orbit = require("./Orbit")
 local RunInput = require("../Run/RunInput")
 local Ship = require("./Ship")
 local Tuning = require("../Run/Tuning")
 
 local Flight = {}
+
+local ORBIT_THROTTLE = 0.6 -- how hard the engine looks to push while circling in orbit
 
 local function wrapAngle(angle: number): number
 	return (angle + math.pi) % (2 * math.pi) - math.pi
@@ -42,29 +47,19 @@ local function tryBoost(ship: Ship.Ship, tuning: Tuning.Tuning, want: number?): 
 	return true
 end
 
--- Steps the ship by dt. `boostPressed` is true on the one sub-step that takes a new boost press.
-function Flight.Step(
+-- Free flight (out of orbit) for dt. Returns whether the engine thrusts.
+local function fly(
 	ship: Ship.Ship,
-	tuning: Tuning.Tuning,
+	ctx: Context.Context,
 	input: RunInput.RunInput,
-	boostPressed: boolean,
+	want: number?,
+	throttle: number,
+	braking: boolean,
 	dt: number
-)
+): boolean
+	local tuning = ctx.tuning
 	local config = tuning.Ship
 	local arena = tuning.Arena
-	local stunned = ship.StunTime > 0
-
-	local want: number? = nil
-	local throttle = 0
-	if not stunned and input.MoveStrength > 0 and input.Move.Magnitude > 1e-6 then
-		want = math.atan2(input.Move.Y, input.Move.X)
-		throttle = math.clamp(input.MoveStrength, 0, 1)
-	end
-	local braking = not stunned and input.Brake
-
-	if boostPressed then
-		tryBoost(ship, tuning, want)
-	end
 
 	-- Turn the nose
 	local rate = config.TurnRate
@@ -153,30 +148,81 @@ function Flight.Step(
 		end
 	end
 
-	-- Never below the orbit track, so the planet can't be hit (orbit lock comes in milestone 2)
-	local floor = arena.PlanetRadius + arena.OrbitAlt
-	distance = position.Magnitude
-	if distance < floor then
-		local outward = if distance > 1e-6 then position / distance else -facing
-		position = outward * floor
-		local inward = v:Dot(outward)
-		if inward < 0 then
-			v -= outward * inward
+	-- The band locks the ship into orbit. Just after leaving it passes freely, but never below the track.
+	if Orbit.InBand(position, tuning) then
+		local track = arena.PlanetRadius + arena.OrbitAlt
+		distance = position.Magnitude
+		if ship.OrbitRelock > 0 and distance < track then
+			local outward = if distance > 1e-6 then position / distance else -facing
+			position = outward * track
+			local inward = v:Dot(outward)
+			if inward < 0 then
+				v -= outward * inward
+			end
 		end
+		ship.Position = position
+		ship.Velocity = v
+		if ship.OrbitRelock <= 0 then
+			Orbit.Enter(ship, ctx)
+		end
+		return thrust
 	end
 
 	ship.Position = position
 	ship.Velocity = v
-	ship.Facing = facing
+	return thrust
+end
 
-	-- Fuel refills whenever the ship isn't boosting
+-- Steps the ship by dt. `boostPressed` is true on the one sub-step that takes a new boost press.
+function Flight.Step(ship: Ship.Ship, ctx: Context.Context, input: RunInput.RunInput, boostPressed: boolean, dt: number)
+	local tuning = ctx.tuning
+	local config = tuning.Ship
+	local stunned = ship.StunTime > 0
+
+	local want: number? = nil
+	local throttle = 0
+	if not stunned and input.MoveStrength > 0 and input.Move.Magnitude > 1e-6 then
+		want = math.atan2(input.Move.Y, input.Move.X)
+		throttle = math.clamp(input.MoveStrength, 0, 1)
+	end
+	local braking = not stunned and input.Brake
+
+	if boostPressed then
+		if ship.IsInOrbit then
+			-- a boost in orbit leaves it, toward where you aim
+			local angle = Orbit.ExitAngle(ship, want)
+			if ship.StunTime <= 0 and ship.Fuel >= config.BoostCost then
+				Orbit.Leave(ship, ctx, angle)
+				tryBoost(ship, tuning, angle)
+			end
+		else
+			tryBoost(ship, tuning, want)
+		end
+	end
+	if ship.IsInOrbit and want and Orbit.AimsOut(ship, tuning, want) then
+		Orbit.Leave(ship, ctx, Orbit.ExitAngle(ship, want))
+	end
+
+	local thrust
+	if ship.IsInOrbit then
+		Orbit.Step(ship, tuning, want, dt)
+		thrust = true
+		throttle = ORBIT_THROTTLE
+	else
+		thrust = fly(ship, ctx, input, want, throttle, braking, dt)
+	end
+	ship.Facing = direction(ship.Heading)
+
+	-- Fuel refills whenever the ship isn't boosting, faster in orbit
 	if ship.BoostTime <= 0 then
-		ship.Fuel = math.min(config.FuelMax, ship.Fuel + config.FuelRegen * dt)
+		local regen = config.FuelRegen * (if ship.IsInOrbit then config.OrbitRegenMult else 1)
+		ship.Fuel = math.min(config.FuelMax, ship.Fuel + regen * dt)
 	end
 
 	ship.ExitTime = math.max(0, ship.ExitTime - dt)
 	ship.StunTime = math.max(0, ship.StunTime - dt)
 	ship.InvulnerableTime = math.max(0, ship.InvulnerableTime - dt)
+	ship.OrbitRelock = math.max(0, ship.OrbitRelock - dt)
 
 	ship.IsThrusting = thrust
 	ship.Throttle = if thrust then throttle else 0
@@ -191,7 +237,7 @@ function Flight.Step(
 	elseif ship.IsBoosting then
 		reach = config.PushBoostRange
 	elseif thrust then
-		reach = config.PushRangeMin + (config.PushRange - config.PushRangeMin) * throttle
+		reach = config.PushRangeMin + (config.PushRange - config.PushRangeMin) * ship.Throttle
 	end
 	ship.FlameReach += (reach - ship.FlameReach) * math.min(1, 14 * dt)
 	if ship.FlameReach < 0.05 then

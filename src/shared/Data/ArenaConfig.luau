@@ -13,7 +13,7 @@ local ArenaConfig = {
 	PlanetMaxHp = 100, -- HP is a percentage
 
 	-- Orbit band (heights above the planet's surface)
-	OrbitBandTop = 4.5, -- flying below this locks you into orbit (milestone 2)
+	OrbitBandTop = 4.5, -- flying below this locks you into orbit
 	OrbitAlt = 2.6, -- height of the locked orbit track
 
 	-- Arena edge

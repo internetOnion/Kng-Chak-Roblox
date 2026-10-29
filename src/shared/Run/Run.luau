@@ -18,6 +18,7 @@
 ]]
 
 local Combat = require("../Combat/Combat")
+local Context = require("./Context")
 local Flight = require("../Ship/Flight")
 local PlanetHealth = require("../Combat/PlanetHealth")
 local Rng = require("../Util/Rng")
@@ -78,6 +79,7 @@ export type Run = typeof(setmetatable(
 		_planet: PlanetHealth.PlanetHealth,
 		_ship: Ship.Ship,
 		_rocks: { Rock.Rock },
+		_ctx: Context.Context, -- handed to flight and combat; its rocks are kept in step with _rocks
 		_nextRockId: number,
 		_director: WaveDirector.WaveDirector,
 		_score: number,
@@ -111,18 +113,20 @@ local function stepRocks(self: Run, dt: number)
 		end
 	end
 	self._rocks = survivors
+	self._ctx.rocks = survivors
 end
 
 local function tick(self: Run, input: Input, dt: number)
 	local boostPressed = self._boostQueued
 	self._boostQueued = false
-	Flight.Step(self._ship, self._tuning, input, boostPressed, dt)
+	Flight.Step(self._ship, self._ctx, input, boostPressed, dt)
 	stepRocks(self, dt)
 	if self._over then
 		return
 	end
 	local combat = Combat.Step(self._ship, self._rocks, self._tuning, self.Events)
 	self._rocks = combat.survivors
+	self._ctx.rocks = combat.survivors
 	self._score += combat.score
 	self._director:Step(dt, {
 		tuning = self._tuning,
@@ -137,8 +141,10 @@ end
 
 function Run.new(setup: Setup?): Run
 	local tuning = Tuning.new(setup and setup.Tuning)
+	local events = RunEvents.new()
+	local rocks = {}
 	local self = setmetatable({
-		Events = RunEvents.new(),
+		Events = events,
 		_tuning = tuning,
 		_planet = PlanetHealth.new(tuning.Arena.PlanetMaxHp),
 		_ship = Ship.new(
@@ -146,7 +152,8 @@ function Run.new(setup: Setup?): Run
 			tuning.Ship.FuelMax,
 			setup and setup.ShipHeading
 		),
-		_rocks = {},
+		_rocks = rocks,
+		_ctx = { tuning = tuning, events = events, rocks = rocks },
 		_nextRockId = 1,
 		_director = WaveDirector.new(Rng.new(setup and setup.Seed or 1), setup and setup.Waves),
 		_score = 0,
@@ -154,9 +161,9 @@ function Run.new(setup: Setup?): Run
 		_pending = 0,
 		_boostQueued = false,
 	}, Run)
-	local rocks = setup and setup.Rocks
-	if rocks then
-		for _, rock in rocks do
+	local startRocks = setup and setup.Rocks
+	if startRocks then
+		for _, rock in startRocks do
 			addRock(self, rock.Type, rock.Position)
 		end
 	end
@@ -204,6 +211,7 @@ end
 -- Replaces this run's tuning overrides (Studio tuning panel). The data modules don't change.
 function Run.SetTuning(self: Run, overrides: Tuning.Overrides?)
 	self._tuning = Tuning.new(overrides)
+	self._ctx.tuning = self._tuning
 end
 
 function Run.Destroy(self: Run)
