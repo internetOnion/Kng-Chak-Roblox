@@ -25,10 +25,13 @@ function Threat.Eta(rock: Rock.Rock, planetRadius: number): number
 	return math.max(0, rock.Position.Magnitude - planetRadius) / math.max(MIN_SPEED, rock.FallSpeed)
 end
 
--- The rock that will hit soonest, or nil when there are none.
+-- The rock that will hit soonest, or nil when there are none. The Inferno's parts never hit on their own.
 function Threat.Soonest(rocks: { Rock.Rock }, planetRadius: number): Rock.Rock?
 	local best, bestEta = nil, math.huge
 	for _, rock in rocks do
+		if rock.Type.IsBossPart then
+			continue
+		end
 		local eta = Threat.Eta(rock, planetRadius)
 		if eta < bestEta then
 			best, bestEta = rock, eta

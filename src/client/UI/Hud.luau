@@ -1,6 +1,8 @@
 --!strict
 --[[
 	Hud: planet HP % (and shield), wave, score and combo, readable at phone size.
+	During the Inferno the wave readout names it, with its plates or core left and
+	the seconds until it reaches the planet.
 
 	    local hud = Hud.new(playerGui)
 	    hud:Update(run:Snapshot()) -- every frame
@@ -18,6 +20,7 @@ local TEXT = Color3.fromHex("#ffffff")
 local LOW_HP = Color3.fromHex("#ff4d5e")
 local LOW_HP_AT = 30 -- HP % below which the HP readout turns red
 local COMBO = Color3.fromHex("#ffe066")
+local BOSS = Color3.fromHex("#ff9a1f")
 
 local Hud = {}
 Hud.__index = Hud
@@ -29,6 +32,7 @@ export type Hud = typeof(setmetatable(
 		_wave: TextLabel,
 		_score: TextLabel,
 		_combo: TextLabel,
+		_boss: TextLabel,
 		_shown: { [string]: any },
 	},
 	Hud
@@ -75,8 +79,12 @@ function Hud.new(parent: Instance): Hud
 		_wave = label(gui, "Wave", Vector2.new(0.5, 0), UDim2.fromScale(0.5, 0), Enum.TextXAlignment.Center),
 		_score = label(gui, "Score", Vector2.new(1, 0), UDim2.fromScale(1, 0), Enum.TextXAlignment.Right),
 		_combo = label(gui, "Combo", Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 34), Enum.TextXAlignment.Center),
+		_boss = label(gui, "Boss", Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 64), Enum.TextXAlignment.Center),
 		_shown = {},
 	}, Hud)
+	self._boss.TextSize = 22
+	self._boss.Size = UDim2.fromOffset(420, 32)
+	self._boss.TextColor3 = BOSS
 	self._combo.FontFace = Fonts.Display
 	self._combo.TextSize = 26
 	self._combo.TextColor3 = COMBO
@@ -95,9 +103,25 @@ function Hud.Update(self: Hud, snapshot: Run.Snapshot)
 		self._hp.Text = if shield > 0 then `HP {hp}% +{shield}` else `HP {hp}%`
 		self._hp.TextColor3 = if hp < LOW_HP_AT then LOW_HP else TEXT
 	end
-	if self._shown.wave ~= snapshot.Wave then
-		self._shown.wave = snapshot.Wave
-		self._wave.Text = if snapshot.Wave > 0 then `WAVE {snapshot.Wave}` else ""
+	local boss = snapshot.Boss
+	local wave = if boss
+		then "INFERNO"
+		elseif snapshot.Wave > 0 then `WAVE {snapshot.Wave} / {snapshot.LastWave}`
+		else ""
+	if self._shown.wave ~= wave then
+		self._shown.wave = wave
+		self._wave.Text = wave
+	end
+	local bossText = ""
+	if boss then
+		local seconds = math.ceil(boss.TimeToImpact)
+		bossText = if boss.Phase < 3
+			then `PLATES {boss.PlatesLeft}/{boss.Plates} · {seconds} s`
+			else `CORE {boss.CoreHits - boss.CoreHitsLeft}/{boss.CoreHits} PERFECTS · {seconds} s`
+	end
+	if self._shown.boss ~= bossText then
+		self._shown.boss = bossText
+		self._boss.Text = bossText
 	end
 	if self._shown.combo ~= snapshot.Combo then
 		self._shown.combo = snapshot.Combo

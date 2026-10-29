@@ -7,6 +7,9 @@
 ]]
 
 local WaveConfig = {
+	-- The call
+	LastWave = 12, -- the Inferno arrives after this wave
+
 	-- Size
 	WaveBase = 6, -- rocks per wave = WaveBase + wave × WavePerLevel
 	WavePerLevel = 1,
@@ -22,6 +25,14 @@ local WaveConfig = {
 	CometWeight = 1,
 	IronWeight = 0.8,
 	ClusterWeight = 0.7,
+
+	-- Modifiers (see Data/WaveModifiers)
+	RemixStart = 8, -- from this wave on, each wave gets a modifier...
+	RemixEnd = 11, -- ...up to this one (the last wave before the Inferno plays straight)
+	SurgeEvery = 5, -- a modifier wave that's a multiple of this is a surge: two modifiers
+	SurgeHeal = 20, -- % repaired for surviving a surge
+	GoldChance = 0.35, -- a wave's golden rock replaces each rock with this chance (it always comes by the last two)
+	ExtraShards = 0, -- clusters split into this many more shards (the Bloom modifier sets 1)
 
 	-- Pacing
 	FirstGroupDelay = 1.2, -- seconds from a wave's start to its first group

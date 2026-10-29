@@ -19,6 +19,7 @@
 	    rock.IsFlared     boolean   pushed by the orbit flare once (it can't be flared again)
 	    rock.HangTime     number    seconds left hanging nearly still after a flare
 	    rock.GraceTime    number    seconds left before it can touch the ship (a new shard)
+	    rock.HitsLeft     number    breaking hits it still takes (1, except the Inferno's core)
 ]]
 
 local RockTypes = require("../Data/RockTypes")
@@ -37,6 +38,7 @@ export type Rock = {
 	IsFlared: boolean,
 	HangTime: number,
 	GraceTime: number,
+	HitsLeft: number,
 }
 
 local SETTLE_RATE = 1 -- how fast a pushed rock's speed toward the planet returns to its fall speed (outside the drag band)
@@ -73,6 +75,7 @@ function Rock.new(
 		IsFlared = false,
 		HangTime = 0,
 		GraceTime = grace or 0,
+		HitsLeft = 1,
 	}
 end
 
@@ -82,10 +85,13 @@ end
 	out, so a push carries it a while before it falls again. In the drag band just
 	above the orbit track it falls at DragBandMult of its fall speed. A flared rock
 	hangs nearly still instead until its hang time runs out. Priming wears off.
+	A part of the Inferno doesn't move here: the boss carries it (see Boss/Inferno).
 ]]
 function Rock.Fall(rock: Rock, tuning: Tuning.Tuning, dt: number)
 	local distance = rock.Position.Magnitude
-	if rock.HangTime > 0 then
+	if rock.Type.IsBossPart then
+		rock.HangTime = math.max(0, rock.HangTime - dt)
+	elseif rock.HangTime > 0 then
 		rock.HangTime = math.max(0, rock.HangTime - dt)
 		rock.Velocity *= 1 - math.min(1, tuning.Ship.FlareHangDrag * dt)
 	elseif distance > 1e-6 then
@@ -101,7 +107,9 @@ function Rock.Fall(rock: Rock, tuning: Tuning.Tuning, dt: number)
 		v -= side * SIDE_DAMPING * dt
 		rock.Velocity = v
 	end
-	rock.Position += rock.Velocity * dt
+	if not rock.Type.IsBossPart then
+		rock.Position += rock.Velocity * dt
+	end
 
 	rock.PushCooldown = math.max(0, rock.PushCooldown - dt)
 	rock.GraceTime = math.max(0, rock.GraceTime - dt)
@@ -114,9 +122,9 @@ function Rock.Fall(rock: Rock, tuning: Tuning.Tuning, dt: number)
 	end
 end
 
--- True once the rock's edge has reached the surface of a planet of `planetRadius`.
+-- True once the rock's edge has reached the surface of a planet of `planetRadius`. Never for the Inferno's parts.
 function Rock.TouchesPlanet(rock: Rock, planetRadius: number): boolean
-	return rock.Position.Magnitude <= planetRadius + rock.Type.Radius
+	return not rock.Type.IsBossPart and rock.Position.Magnitude <= planetRadius + rock.Type.Radius
 end
 
 -- A frozen copy of the rock, safe to hand to code outside the simulation.

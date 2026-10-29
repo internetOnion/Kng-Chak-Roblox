@@ -27,9 +27,12 @@
 	    slingshot, not primed    Dive       heals a little
 	    plain boosted ram        Ram        scores, never heals
 
-	Breaking a primed rock gives fuel back. A break scores the rock's score × its
+	A golden rock's PERFECT heals HealGold instead. Breaking a primed rock gives
+	fuel back, and with the Shockwave upgrade primes every rock near it. A rock
+	that takes more than one hit (the Inferno's core) cracks on each but the last:
+	it pays out like a break, the ship bounces off, and the rock stays. A break scores the rock's score × its
 	combo points × the combo multiplier from before the break. A rock type with a
-	Split (the cluster) breaks into that many shards, which fly apart and can't
+	Split (the cluster) breaks into that many shards (more in a Bloom wave), which fly apart and can't
 	touch the ship for their grace time.
 
 	The Run calls Step once per sub-step, after the ship and rocks have moved.
@@ -50,6 +53,27 @@ export type Result = {
 	score: number, -- points earned this step
 }
 
+-- A pushed comet slows to its slow fall speed for good.
+local function slow(rock: Rock.Rock)
+	local slowFall = rock.Type.SlowFallSpeed
+	if slowFall then
+		rock.FallSpeed = slowFall
+		rock.Velocity *= 0.3
+	end
+end
+
+-- Primes `rock` for the tuning's PrimedTime. The first prime adds combo points for `move`.
+local function prime(rock: Rock.Rock, ctx: Context.Context, move: string)
+	local tuning = ctx.tuning
+	local first = not rock.IsPrimed
+	rock.IsPrimed = true
+	rock.PrimedTime = tuning.Ship.PrimedTime
+	if first then
+		ctx.events.RockPrimed:Fire(Rock.Snapshot(rock))
+		Combo.Add(ctx.combo, tuning, ctx.events, tuning.Combo.PushPoints, move)
+	end
+end
+
 local function push(ship: Ship.Ship, rock: Rock.Rock, ctx: Context.Context)
 	local flare = ship.IsInOrbit
 	if rock.PushCooldown > 0 then
@@ -59,11 +83,7 @@ local function push(ship: Ship.Ship, rock: Rock.Rock, ctx: Context.Context)
 	local config = tuning.Ship
 	rock.PushCooldown = config.PushCooldown
 	local outward = rock.Position.Unit
-	local slowFall = rock.Type.SlowFallSpeed
-	if slowFall then
-		rock.FallSpeed = slowFall
-		rock.Velocity *= 0.3
-	end
+	slow(rock)
 	if flare and not rock.IsFlared then -- a later flare only primes it again (below)
 		rock.IsFlared = true
 		rock.HangTime = config.FlareHang
@@ -76,13 +96,7 @@ local function push(ship: Ship.Ship, rock: Rock.Rock, ctx: Context.Context)
 		local factor = rock.Type.PushFactor
 		rock.Velocity += (ship.FlameDirection * config.PushKick + outward * config.PushLift) * factor
 	end
-	local first = not rock.IsPrimed
-	rock.IsPrimed = true
-	rock.PrimedTime = config.PrimedTime
-	if first then
-		events.RockPrimed:Fire(Rock.Snapshot(rock))
-		Combo.Add(ctx.combo, tuning, events, tuning.Combo.PushPoints, if flare then "Flare" else "Push")
-	end
+	prime(rock, ctx, if flare then "Flare" else "Push")
 end
 
 local function bump(ship: Ship.Ship, rock: Rock.Rock, toRock: Vector2, ctx: Context.Context)
@@ -144,8 +158,9 @@ local function split(rock: Rock.Rock, ctx: Context.Context, into: { Rock.Rock })
 	local outward = rock.Position.Unit
 	local base = ctx.rng:Next() * 2 * math.pi
 	local shards = {}
-	for i = 1, rule.Count do
-		local angle = base + (i - 1) / rule.Count * 2 * math.pi
+	local count = rule.Count + ctx.tuning.Waves.ExtraShards
+	for i = 1, count do
+		local angle = base + (i - 1) / count * 2 * math.pi
 		local velocity = Vector2.new(math.cos(angle), math.sin(angle)) * rule.Speed + outward * rule.Lift
 		local shard = ctx.newRock(shardType, rock.Position + velocity * 0.12, rock.SpeedMult, velocity, rule.Grace)
 		table.insert(into, shard)
@@ -154,13 +169,37 @@ local function split(rock: Rock.Rock, ctx: Context.Context, into: { Rock.Rock })
 	ctx.events.RockSplit:Fire(Rock.Snapshot(rock), table.freeze(shards))
 end
 
--- Breaks `rock` and pays out for how it broke. Returns the score it earned.
-local function breakRock(ship: Ship.Ship, rock: Rock.Rock, ctx: Context.Context): number
+-- Primes every rock within the Shockwave upgrade's radius of `broken` (a primed rock that just broke).
+local function shockwave(broken: Rock.Rock, ctx: Context.Context)
+	local radius = ctx.tuning.Combo.ShockwaveRadius
+	if radius <= 0 then
+		return
+	end
+	for _, rock in ctx.rocks do
+		if rock ~= broken and not rock.IsPrimed then
+			if (rock.Position - broken.Position).Magnitude - rock.Type.Radius <= radius then
+				slow(rock)
+				prime(rock, ctx, "Shockwave")
+			end
+		end
+	end
+end
+
+--[[
+	Pays out for the spear getting through to `rock`: score, combo, heal and fuel
+	back, by how it was hit. If it was the rock's last hit it breaks (RockBroken);
+	a tougher rock (the Inferno's core) only cracks (CoreCracked) and stays.
+	Returns the score it earned.
+]]
+local function payOut(ship: Ship.Ship, rock: Rock.Rock, ctx: Context.Context, breaks: boolean): number
 	local tuning, events = ctx.tuning, ctx.events
 	local config = tuning.Combo
 	local cause, points, heal
 	if rock.IsPrimed and ship.IsSlingshotting then
 		cause, points, heal = "Perfect", config.PerfectPoints, config.HealPerfect
+		if rock.Type == RockTypes.Gold then
+			heal = config.HealGold
+		end
 	elseif rock.IsPrimed then
 		cause, points, heal = "PushBreak", config.PushBreakPoints, config.HealPushBreak
 	elseif ship.IsSlingshotting then
@@ -170,23 +209,51 @@ local function breakRock(ship: Ship.Ship, rock: Rock.Rock, ctx: Context.Context)
 	end
 
 	local score = rock.Type.Score * points * Combo.Multiplier(ctx.combo, tuning)
-	local broken = Rock.Snapshot(rock)
-	events.RockBroken:Fire(broken, cause)
-	if cause == "Perfect" then
-		events.Perfect:Fire(broken)
+	local primed = rock.IsPrimed
+	if breaks then
+		local broken = Rock.Snapshot(rock)
+		events.RockBroken:Fire(broken, cause)
+		if cause == "Perfect" then
+			events.Perfect:Fire(broken)
+		end
+	else
+		rock.HitsLeft -= 1
+		rock.IsPrimed = false
+		rock.PrimedTime = 0
+		rock.IsFlared = false -- the flare can catch it again for the next one
+		rock.HangTime = 0
+		local cracked = Rock.Snapshot(rock)
+		events.CoreCracked:Fire(cracked, rock.HitsLeft)
+		if cause == "Perfect" then
+			events.Perfect:Fire(cracked)
+		end
 	end
 	Combo.Add(ctx.combo, tuning, events, points, cause)
 	if heal > 0 then
 		ctx.planet:Heal(heal)
 		events.Healed:Fire(heal, cause)
 	end
-	if rock.IsPrimed then
+	if primed then
 		local fuelMax = tuning.Ship.FuelMax
 		local refund = math.min(config.PushBreakRefuel, fuelMax - ship.Fuel)
 		ship.Fuel += refund
 		events.FuelRefunded:Fire(refund)
+		if breaks then
+			shockwave(rock, ctx)
+		end
 	end
 	return score
+end
+
+-- A hit that cracks a tough rock without breaking it: the ship bounces off, spear in, but isn't stunned.
+local function bounceOff(ship: Ship.Ship, toRock: Vector2, ctx: Context.Context)
+	ship.Velocity = -toRock * ctx.tuning.Inferno.CrackKnock
+	ship.InvulnerableTime = 0.5
+	ship.BoostTime = 0
+	ship.SlingshotTime = 0
+	ship.IsBoosting = false
+	ship.IsSlingshotting = false
+	ship.IsSpearOut = false
 end
 
 function Combat.Step(ship: Ship.Ship, ctx: Context.Context): Result
@@ -215,8 +282,11 @@ function Combat.Step(ship: Ship.Ship, ctx: Context.Context): Result
 		if rock.GraceTime <= 0 and (touchesBody or touchesSpear) then
 			local toRock = if distance > 1e-3 then offset / distance else facing
 			local front = touchesSpear or distance < 1e-3 or along / distance >= cosBreak
-			if hard and front and canBreak(ship, rock) then
-				score += breakRock(ship, rock, ctx)
+			if hard and front and canBreak(ship, rock) and rock.HitsLeft > 1 then
+				score += payOut(ship, rock, ctx, false)
+				bounceOff(ship, toRock, ctx)
+			elseif hard and front and canBreak(ship, rock) then
+				score += payOut(ship, rock, ctx, true)
 				split(rock, ctx, shards)
 				continue
 			elseif hard and front then

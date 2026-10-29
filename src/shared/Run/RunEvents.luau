@@ -87,6 +87,11 @@ export type RunEvents = {
 	-- Breaking a primed rock gave fuel back.
 	FuelRefunded: Signal.Signal,
 
+	-- (wave: number, intro: string?, modifiers: { string })
+	-- The next wave is coming, after the breather: what its banner shows. intro is the rock type
+	-- id the wave introduces, if any; modifiers are ids from Data/WaveModifiers (two in a surge).
+	WaveAnnounced: Signal.Signal,
+
 	-- (wave: number)
 	-- A wave began.
 	WaveStarted: Signal.Signal,
@@ -95,9 +100,37 @@ export type RunEvents = {
 	-- Every rock of the wave is gone and the planet survived.
 	WaveCleared: Signal.Signal,
 
+	-- (cards: { string })
+	-- Upgrade cards are on offer (ids from Data/Upgrades). The Run waits until one is picked.
+	UpgradeOffered: Signal.Signal,
+
+	-- (id: string, stacks: number)
+	-- The player picked an upgrade; it now has this many stacks.
+	UpgradePicked: Signal.Signal,
+
+	-- (phase: number)
+	-- The Inferno arrived (1), lost half its plates (2) or exposed its core (3).
+	BossPhaseChanged: Signal.Signal,
+
+	-- (damagePercent: number)
+	-- The Inferno reached the planet. Right after, damagePercent comes off and it bounces back to the edge.
+	BossHit: Signal.Signal,
+
+	-- (rock: Rock, hitsLeft: number)
+	-- A PERFECT got through to the Inferno's core without cracking it open yet. Perfect fires next.
+	CoreCracked: Signal.Signal,
+
+	-- (step: number, name: string)
+	-- A step of the guided first call began ("Move", "Boost", "PushBreak", "Slingshot").
+	GuidedStep: Signal.Signal,
+
 	-- (wave: number)
 	-- Planet HP reached 0 during this wave.
 	GameOver: Signal.Signal,
+
+	-- (summary: Summary)
+	-- The call ended, lost or won (see Run.Summary). After a loss, GameOver fires first.
+	RunFinished: Signal.Signal,
 }
 
 local RunEvents = {}
@@ -121,9 +154,17 @@ RunEvents.Names = table.freeze({
 	"Healed",
 	"ShieldChanged",
 	"FuelRefunded",
+	"WaveAnnounced",
 	"WaveStarted",
 	"WaveCleared",
+	"UpgradeOffered",
+	"UpgradePicked",
+	"BossPhaseChanged",
+	"BossHit",
+	"CoreCracked",
+	"GuidedStep",
 	"GameOver",
+	"RunFinished",
 })
 
 function RunEvents.new(): RunEvents

@@ -79,8 +79,8 @@ describe("Waves", function()
 			expect(most).toBe(3)
 		end)
 
-		it("starts with WaveStarted and clears right after its last rock is gone", function()
-			local run = Run.new({ Waves = { plan(5, 2) } })
+		it("announces and starts the wave, and clears right after its last rock is gone", function()
+			local run = Run.new({ Waves = { plan(5, 2) }, Offers = false })
 			local log = record(run)
 			local clearedWithRocksLeft = false
 			playUntil(run, 120, function(snapshot)
@@ -91,6 +91,7 @@ describe("Waves", function()
 				return nil
 			end)
 			expect(names(log)).toEqual({
+				"WaveAnnounced",
 				"WaveStarted",
 				"PlanetHit",
 				"PlanetHit",
@@ -99,35 +100,35 @@ describe("Waves", function()
 				"PlanetHit",
 				"WaveCleared",
 			})
-			expect(log[1][2]).toBe(1)
-			expect(log[7][2]).toBe(1)
+			expect(log[2][2]).toBe(1)
+			expect(log[8][2]).toBe(1)
 			expect(clearedWithRocksLeft).toBe(false)
 		end)
 
 		it("fires WaveCleared on the same step the last rock goes", function()
-			local run = Run.new({ Waves = { plan(1, 1) } })
+			local run = Run.new({ Waves = { plan(1, 1) }, Offers = false })
 			local log = record(run)
 			playUntil(run, 60, function()
-				return #log > 1
+				return #log > 2
 			end)
 			-- the step that fires PlanetHit for the only rock also clears the wave
-			expect(names(log)).toEqual({ "WaveStarted", "PlanetHit", "WaveCleared" })
+			expect(names(log)).toEqual({ "WaveAnnounced", "WaveStarted", "PlanetHit", "WaveCleared" })
 		end)
 
 		it("plays nothing more after its last wave", function()
-			local run = Run.new({ Waves = { plan(1, 1) } })
+			local run = Run.new({ Waves = { plan(1, 1) }, Offers = false })
 			local log = record(run)
 			playUntil(run, 90, function()
 				return nil
 			end)
-			expect(#log).toBe(3)
+			expect(#log).toBe(4)
 			expect(run:Snapshot().Phase).toBe("Breather")
 		end)
 	end)
 
 	describe("from the wave data", function()
 		it("plays wave 1 from start to clear, then starts wave 2 after the breather", function()
-			local run = Run.new({ Seed = 7 })
+			local run = Run.new({ Seed = 7, Offers = false })
 			local log = record(run)
 			local clearedAt, startedAgainAt
 			local t = 0

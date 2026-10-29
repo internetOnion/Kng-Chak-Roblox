@@ -3,7 +3,7 @@
 	TuningPanel (Studio only): change tuning values during a playtest, like the
 	prototype's T menu. Press T to show or hide it.
 
-	Every number in the tuning data (ship, combo, arena, waves) gets a box. A change goes
+	Every number in the tuning data (ship, combo, arena, waves, Inferno) gets a box. A change goes
 	straight to the running Run through its tuning overrides, and later Runs in the
 	same playtest start with them too. Nothing is written back to the data modules,
 	so stopping play throws every change away. Changed values show in yellow;
@@ -23,7 +23,7 @@ local TOGGLE_KEY = Enum.KeyCode.T
 local ROW_HEIGHT = 24
 local CHANGED = Color3.fromHex("#ffe066")
 local NORMAL = Color3.fromHex("#ffffff")
-local SECTION_ORDER = { "Ship", "Combo", "Arena", "Waves" }
+local SECTION_ORDER = { "Ship", "Combo", "Arena", "Waves", "Inferno" }
 
 local TuningPanel = {}
 

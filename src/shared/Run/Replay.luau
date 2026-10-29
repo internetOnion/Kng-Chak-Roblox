@@ -5,11 +5,14 @@
 	A Run uses no randomness but its seed and reads no clock, so the same seed
 	and the same input, frame by frame, give the same run. The live game feeds
 	the Run through a Recorder, which rounds each frame's input slightly
-	(Quantize) so the recording holds exactly what the Run saw.
+	(Quantize) so the recording holds exactly what the Run saw. Commands that
+	aren't flight input (picking an upgrade) are recorded with the frame they
+	came before.
 
 	    local recorder = Replay.Recorder.new(seed)
 	    local input, dt = recorder:Record(rawInput, rawDt)
 	    run:Step(input, dt)
+	    recorder:Pick(2); run:PickUpgrade(2)
 	    local log = Replay.Log(run)                        -- right after creating the run
 	    print(Replay.Encode(recorder:Finish(log, run)))     -- a Luau module, for tests/Replays
 
@@ -26,9 +29,14 @@ local RunInput = require("./RunInput")
 -- One frame: { dt, moveX, moveY, strength, flags } with flags 1 = boost pressed, 2 = boost held, 4 = brake.
 export type Frame = { number }
 
+-- A command between frames: { frames recorded before it, name, argument }. Only "Pick" (an upgrade card) so far.
+export type Command = { any }
+
 export type Recording = {
 	Seed: number,
+	Mode: string?, -- the Run's mode, if not "Call"
 	Frames: { Frame },
+	Commands: { Command }?,
 	Events: { string }, -- the event log the recorded run produced
 	Final: string, -- a summary of how it ended (see Summary)
 }
@@ -47,6 +55,18 @@ end
 local function describe(value: any): string
 	if type(value) == "table" and type(value.Type) == "table" then
 		return `{value.Type.Id}#{value.Id}`
+	elseif type(value) == "table" and #value == 0 and next(value) ~= nil then
+		-- a record: its fields, sorted by name, so the order never depends on how the table iterates
+		local keys = {}
+		for key in value do
+			table.insert(keys, tostring(key))
+		end
+		table.sort(keys)
+		local parts = {}
+		for _, key in keys do
+			table.insert(parts, `{key}={describe(value[key])}`)
+		end
+		return `\{{table.concat(parts, ",")}\}`
 	elseif type(value) == "table" then
 		local parts = {}
 		for _, item in value do
@@ -76,12 +96,13 @@ function Replay.Log(run: Run.Run): { string }
 	return log
 end
 
--- A one-line summary of where a run stands: wave, score, planet HP and the ship's position and speed.
+-- A one-line summary of where a run stands: phase, wave, score, planet HP and the ship's position and speed.
 function Replay.Summary(run: Run.Run): string
 	local snapshot = run:Snapshot()
 	local ship = snapshot.Ship
 	return string.format(
-		"wave %d score %d hp %.3f ship %s speed %.3f rocks %d",
+		"%s wave %d score %d hp %.3f ship %s speed %.3f rocks %d",
+		snapshot.Phase,
 		snapshot.Wave,
 		snapshot.Score,
 		snapshot.PlanetHp,
@@ -125,10 +146,20 @@ end
 local Recorder = {}
 Recorder.__index = Recorder
 
-export type Recorder = typeof(setmetatable({} :: { _seed: number, _frames: { Frame } }, Recorder))
+export type Recorder = typeof(setmetatable(
+	{} :: { _seed: number, _mode: string?, _frames: { Frame }, _commands: { Command } },
+	Recorder
+))
 
-function Recorder.new(seed: number): Recorder
-	return setmetatable({ _seed = seed, _frames = {} }, Recorder)
+-- A recorder for a Run with `seed`, in `mode` (default "Call").
+function Recorder.new(seed: number, mode: string?): Recorder
+	return setmetatable({ _seed = seed, _mode = mode, _frames = {}, _commands = {} }, Recorder)
+end
+
+-- Records an upgrade pick (card `index`), made before the next frame.
+function Recorder.Pick(self: Recorder, index: number)
+	local command: Command = { #self._frames, "Pick", index }
+	table.insert(self._commands, command)
 end
 
 -- Records a frame and returns the exact input and dt to step the Run with.
@@ -142,7 +173,9 @@ end
 function Recorder.Finish(self: Recorder, events: { string }, run: Run.Run): Recording
 	return {
 		Seed = self._seed,
+		Mode = self._mode,
 		Frames = table.clone(self._frames),
+		Commands = if #self._commands > 0 then table.clone(self._commands) else nil,
 		Events = table.clone(events),
 		Final = Replay.Summary(run),
 	}
@@ -152,9 +185,18 @@ Replay.Recorder = Recorder
 
 -- Plays a recording on a fresh Run with its seed. Returns the event log it produces and its summary at the end.
 function Replay.Play(recording: Recording): ({ string }, string)
-	local run = Run.new({ Seed = recording.Seed })
+	local run = Run.new({ Seed = recording.Seed, Mode = recording.Mode :: any })
 	local log = Replay.Log(run)
-	for _, frame in recording.Frames do
+	local commands = recording.Commands or {}
+	local upcoming = 1
+	for index, frame in recording.Frames do
+		while commands[upcoming] and commands[upcoming][1] < index do
+			local command = commands[upcoming]
+			if command[2] == "Pick" then
+				run:PickUpgrade(command[3])
+			end
+			upcoming += 1
+		end
 		run:Step(fromFrame(frame))
 	end
 	local final = Replay.Summary(run)
@@ -166,6 +208,9 @@ end
 function Replay.Encode(recording: Recording): string
 	local lines = { "-- A recorded Run: replaying its frames on its seed must give exactly these events.", "return {" }
 	table.insert(lines, `\tSeed = {string.format("%d", recording.Seed)},`)
+	if recording.Mode then
+		table.insert(lines, `\tMode = {string.format("%q", recording.Mode)},`)
+	end
 	table.insert(lines, "\tFrames = {")
 	for _, frame in recording.Frames do
 		table.insert(
@@ -174,6 +219,13 @@ function Replay.Encode(recording: Recording): string
 		)
 	end
 	table.insert(lines, "\t},")
+	if recording.Commands then
+		table.insert(lines, "\tCommands = {")
+		for _, command in recording.Commands do
+			table.insert(lines, string.format("\t\t{ %d, %q, %d },", command[1], command[2], command[3]))
+		end
+		table.insert(lines, "\t},")
+	end
 	table.insert(lines, "\tEvents = {")
 	for _, event in recording.Events do
 		table.insert(lines, `\t\t{string.format("%q", event)},`)

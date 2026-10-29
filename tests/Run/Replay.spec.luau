@@ -1,6 +1,6 @@
 --!strict
-local Bot = require("../Replays/Bot")
 local Replay = require("@shared/Run/Replay")
+local Bot = (require("../Replays/Bot") :: any) :: Replay.Recording
 local Run = require("@shared/Run/Run")
 local RunInput = require("@shared/Run/RunInput")
 local TestKit = require("@testkit")

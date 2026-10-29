@@ -1,0 +1,180 @@
+{
+  "className": "Model",
+  "children": [
+    {
+      "name": "Body",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          2,
+          2,
+          2
+        ],
+        "Position": [
+          0,
+          0,
+          0
+        ],
+        "Color": [
+          0.4549,
+          0.5294,
+          0.6392
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Band",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          2.1,
+          0.3,
+          0.3
+        ],
+        "Position": [
+          0,
+          0.35,
+          0
+        ],
+        "Color": [
+          0.2353,
+          0.2745,
+          0.3451
+        ],
+        "Material": "SmoothPlastic",
+        "Orientation": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "Band2",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.3,
+          0.3,
+          2.1
+        ],
+        "Position": [
+          0,
+          0.35,
+          0
+        ],
+        "Color": [
+          0.2353,
+          0.2745,
+          0.3451
+        ],
+        "Material": "SmoothPlastic"
+      }
+    },
+    {
+      "name": "Crack",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.18,
+          0.2,
+          1.4
+        ],
+        "Position": [
+          0.35,
+          0.92,
+          0
+        ],
+        "Color": [
+          1.0,
+          0.8784,
+          0.4
+        ],
+        "Material": "Neon",
+        "Orientation": [
+          0,
+          25,
+          0
+        ]
+      }
+    },
+    {
+      "name": "Crack2",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.16,
+          0.2,
+          0.9
+        ],
+        "Position": [
+          -0.35,
+          0.9,
+          -0.3
+        ],
+        "Color": [
+          1.0,
+          0.8784,
+          0.4
+        ],
+        "Material": "Neon",
+        "Orientation": [
+          0,
+          -40,
+          0
+        ]
+      }
+    },
+    {
+      "name": "Outline",
+      "className": "Highlight",
+      "properties": {
+        "OutlineColor": [
+          0,
+          0,
+          0
+        ],
+        "OutlineTransparency": 0,
+        "FillColor": [
+          1.0,
+          0.3098,
+          0.8471
+        ],
+        "FillTransparency": 1,
+        "DepthMode": "Occluded"
+      }
+    }
+  ]
+}

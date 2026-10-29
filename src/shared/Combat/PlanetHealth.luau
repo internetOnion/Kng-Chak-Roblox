@@ -38,10 +38,11 @@ export type PlanetHealth = typeof(setmetatable(
 	PlanetHealth
 ))
 
-function PlanetHealth.new(maxHp: number?, maxShield: number?): PlanetHealth
+-- A planet at `startHp` (default: full).
+function PlanetHealth.new(maxHp: number?, maxShield: number?, startHp: number?): PlanetHealth
 	local max = maxHp or ArenaConfig.PlanetMaxHp
 	return setmetatable({
-		Hp = max,
+		Hp = math.clamp(startHp or max, 0, max),
 		MaxHp = max,
 		Shield = 0,
 		MaxShield = maxShield or ArenaConfig.PlanetMaxShield,
@@ -92,6 +93,14 @@ function PlanetHealth.Heal(self: PlanetHealth, amount: number)
 		self.Changed:Fire(self.Hp, fill)
 	end
 	setShield(self, math.min(self.MaxShield, self.Shield + amount - fill))
+end
+
+-- Changes the shield cap (an upgrade raised it). A shield above the new cap drops to it.
+function PlanetHealth.SetMaxShield(self: PlanetHealth, maxShield: number)
+	self.MaxShield = maxShield
+	if self.Shield > maxShield then
+		setShield(self, maxShield)
+	end
 end
 
 -- Refill to full, with no shield, for a new run.

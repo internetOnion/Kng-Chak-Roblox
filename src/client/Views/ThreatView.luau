@@ -9,7 +9,7 @@
 	impact mark on the planet's edge where it will land, in the rock's colour
 	(pink while primed, red and pulsing once it's about to hit). The threat, the
 	rock the Run says will hit soonest (Snapshot.ThreatId), also gets a pulsing
-	glowing ring. It only reads the snapshot.
+	glowing ring. The Inferno's plates and core get none. It only reads the snapshot.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -127,6 +127,9 @@ function ThreatView.Update(self: ThreatView, snapshot: Run.Snapshot, arena: Aren
 	local seen = {}
 	local threat: Rock.Rock? = nil
 	for _, rock in snapshot.Rocks do
+		if rock.Type.IsBossPart then
+			continue -- the Inferno's parts ride on it and never land on their own
+		end
 		seen[rock.Id] = true
 		if rock.Id == snapshot.ThreatId then
 			threat = rock

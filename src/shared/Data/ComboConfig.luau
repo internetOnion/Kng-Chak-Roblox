@@ -27,9 +27,13 @@ local ComboConfig = {
 	HealPushBreak = 3,
 	HealDive = 2,
 	HealPerfect = 6,
+	HealGold = 15, -- a golden rock (only a PERFECT breaks it)
 
 	-- Fuel
 	PushBreakRefuel = 30, -- fuel back for breaking a primed rock
+
+	-- Shockwave (an upgrade sets the radius)
+	ShockwaveRadius = 0, -- breaking a primed rock primes every rock within this distance of it
 }
 
 export type ComboConfig = typeof(ComboConfig)

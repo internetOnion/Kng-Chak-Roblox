@@ -22,7 +22,11 @@ export type Rng = typeof(setmetatable({} :: { _state: number }, Rng))
 
 function Rng.new(seed: number): Rng
 	local state = math.floor(math.abs(seed)) % (MODULUS - 1) + 1
-	return setmetatable({ _state = state }, Rng)
+	local rng = setmetatable({ _state = state }, Rng)
+	-- The first number after a small seed is about seed × 2e-5, so nearby small seeds would all
+	-- start with nearly the same choice. One step mixes the seed in properly.
+	rng:Next()
+	return rng
 end
 
 function Rng.Next(self: Rng): number

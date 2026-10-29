@@ -5,7 +5,7 @@
 	The Run builds one per Run and keeps `rocks` pointing at the rocks alive right
 	now. The inner modules read the tuning, change the ship, rocks, combo and
 	planet they're given and fire the Run's events; they never keep the context
-	between steps.
+	between steps (the guided call keeps its event connections, which die with the Run).
 ]]
 
 local Combo = require("../Combat/Combo")
