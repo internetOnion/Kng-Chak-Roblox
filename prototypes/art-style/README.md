@@ -16,6 +16,8 @@ On this branch, with `rojo serve` connected, press Play in Studio. The bar at th
 
 The code is `src/client/Dev/StylePrototype.luau`, switched on in the client's `DEV_TOOLS`.
 
-## Verdict
+## Verdict (2026-10-29)
 
-_Not chosen yet._
+**A · Toy Box won.** It reads best at phone size: every rock type has its own silhouette, the primed rock pops, and it feels bright and fun. B felt the most "Roblox" but its blocky rocks are harder to tell apart, and its strong tilt shows the planet's side. C depends on neon glow, which looks flat at low graphics quality on cheap phones.
+
+Consequence: the art is 3D toy models built in Studio, not 2D images on flat parts. The art guide, spec #1 and the art tickets were updated to match.
