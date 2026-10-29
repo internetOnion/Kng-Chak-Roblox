@@ -30,6 +30,14 @@ export type RunEvents = {
 	-- A rock hit the ship's back half, or its soft nose. knock is the velocity the ship is knocked away with.
 	ShipBumped: Signal.Signal,
 
+	-- ()
+	-- The ship flew into the orbit band and locked onto the orbit track.
+	OrbitLocked: Signal.Signal,
+
+	-- ()
+	-- The ship left the orbit.
+	OrbitLeft: Signal.Signal,
+
 	-- (wave: number)
 	-- A wave began.
 	WaveStarted: Signal.Signal,
@@ -51,6 +59,8 @@ RunEvents.Names = table.freeze({
 	"RockPrimed",
 	"PlanetHit",
 	"ShipBumped",
+	"OrbitLocked",
+	"OrbitLeft",
 	"WaveStarted",
 	"WaveCleared",
 	"GameOver",

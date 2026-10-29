@@ -32,6 +32,15 @@ local ShipConfig = {
 	BoostExitTime = 0.35, -- just after a boost, the nose keeps boost turning...
 	BoostExitGrip = 4, -- ...and momentum follows it this much harder
 
+	-- Orbit (the band's heights are in ArenaConfig: OrbitBandTop, OrbitAlt)
+	OrbitAccel = 18, -- holding along / against the orbit speeds you up / slows you down
+	OrbitMaxSpeed = 26,
+	OrbitEntryMin = 12, -- the slowest you lock in at
+	OrbitExitDot = 0.3, -- aim at least this much away from the planet to leave (0 = sideways, 1 = straight out)
+	OrbitSnap = 3.5, -- how gently you settle onto the orbit track
+	OrbitRegenMult = 4, -- fuel refills this much faster while in orbit
+	OrbitRelockTime = 0.5, -- seconds after leaving before the band can lock you again
+
 	-- Body (the hit zone matches the model: prototype sizes at shipScale 1.3)
 	HitRadius = 1.56, -- body hit radius
 	SpearTip = 2.6, -- centre to the spear's tip, along the nose
