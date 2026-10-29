@@ -26,6 +26,10 @@ export type RunEvents = {
 	-- A rock reached the planet. Planet HP drops by damagePercent right after.
 	PlanetHit: Signal.Signal,
 
+	-- (rock: Rock, knock: Vector2)
+	-- A rock hit the ship's back half, or its soft nose. knock is the velocity the ship is knocked away with.
+	ShipBumped: Signal.Signal,
+
 	-- (wave: number)
 	-- A wave began.
 	WaveStarted: Signal.Signal,
@@ -46,6 +50,7 @@ RunEvents.Names = table.freeze({
 	"RockBroken",
 	"RockPrimed",
 	"PlanetHit",
+	"ShipBumped",
 	"WaveStarted",
 	"WaveCleared",
 	"GameOver",

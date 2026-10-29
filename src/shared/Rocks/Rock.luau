@@ -7,12 +7,14 @@
 	has no model: the client's rock view draws one for each rock in the snapshot.
 	Positions are arena positions (see Arena/ArenaSpace), with the planet at (0, 0).
 
-	    rock.Id        number    unique within its Run; views track models by it
-	    rock.Type      RockType  see Data/RockTypes
-	    rock.Position  Vector2   arena position
-	    rock.Velocity  Vector2   arena units per second
-	    rock.FallSpeed number    arena units per second toward the planet (its type's, scaled by the wave)
-	    rock.IsPrimed  boolean   pushed by the flame (milestone 1, flame push)
+	    rock.Id           number    unique within its Run; views track models by it
+	    rock.Type         RockType  see Data/RockTypes
+	    rock.Position     Vector2   arena position
+	    rock.Velocity     Vector2   arena units per second
+	    rock.FallSpeed    number    speed toward the planet (its type's, scaled by the wave)
+	    rock.IsPrimed     boolean   pushed by the flame recently; worth more when broken
+	    rock.PrimedTime   number    seconds of priming left
+	    rock.PushCooldown number    seconds before the flame can push it again
 ]]
 
 local RockTypes = require("../Data/RockTypes")
@@ -24,31 +26,57 @@ export type Rock = {
 	Velocity: Vector2,
 	FallSpeed: number,
 	IsPrimed: boolean,
+	PrimedTime: number,
+	PushCooldown: number,
 }
+
+local SETTLE_RATE = 1 -- how fast a pushed rock's speed toward the planet returns to its fall speed
+local SIDE_DAMPING = 0.8 -- how fast sideways drift dies out
 
 local Rock = {}
 
--- A new rock. `speedMult` scales its type's fall speed (default 1).
+-- A new rock, already falling. `speedMult` scales its type's fall speed (default 1).
 function Rock.new(id: number, rockType: RockTypes.RockType, position: Vector2, speedMult: number?): Rock
+	local fallSpeed = rockType.FallSpeed * (speedMult or 1)
+	local distance = position.Magnitude
 	return {
 		Id = id,
 		Type = rockType,
 		Position = position,
-		Velocity = Vector2.zero,
-		FallSpeed = rockType.FallSpeed * (speedMult or 1),
+		Velocity = if distance > 1e-6 then -position / distance * fallSpeed else Vector2.zero,
+		FallSpeed = fallSpeed,
 		IsPrimed = false,
+		PrimedTime = 0,
+		PushCooldown = 0,
 	}
 end
 
--- Moves the rock straight toward the planet at its fall speed for dt seconds.
+--[[
+	Moves the rock for dt seconds. It falls toward the planet: after a push its
+	speed toward the planet eases back to its fall speed and sideways drift dies
+	out, so a push carries it a while before it falls again. Priming wears off.
+]]
 function Rock.Fall(rock: Rock, dt: number)
 	local distance = rock.Position.Magnitude
-	if distance < 1e-6 then
-		rock.Velocity = Vector2.zero
-		return
+	if distance > 1e-6 then
+		local inward = -rock.Position / distance
+		local v = rock.Velocity
+		local along = v:Dot(inward)
+		v += inward * (rock.FallSpeed - along) * SETTLE_RATE * dt
+		local side = v - inward * v:Dot(inward)
+		v -= side * SIDE_DAMPING * dt
+		rock.Velocity = v
 	end
-	rock.Velocity = -rock.Position / distance * rock.FallSpeed
 	rock.Position += rock.Velocity * dt
+
+	rock.PushCooldown = math.max(0, rock.PushCooldown - dt)
+	if rock.IsPrimed then
+		rock.PrimedTime -= dt
+		if rock.PrimedTime <= 0 then
+			rock.PrimedTime = 0
+			rock.IsPrimed = false
+		end
+	end
 end
 
 -- True once the rock's edge has reached the surface of a planet of `planetRadius`.

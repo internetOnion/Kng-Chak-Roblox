@@ -7,7 +7,8 @@
 
 	The model is a clone of ReplicatedStorage.Assets.Ship.Ship, built nose along
 	-Z around the origin. Its Spear part shows while the spear is out; its Flame
-	part stretches behind the engine with the throttle and takes the state's colour.
+	part stretches behind the engine as far as the flame's push reach and takes the
+	state's colour.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -59,8 +60,10 @@ function ShipView.Update(self: ShipView, ship: Ship.Ship)
 
 	local flame = self._flame
 	if flame then
-		local length = if ship.IsBoosting then 3.5 elseif ship.IsThrusting then 1 + 2 * ship.Throttle else 0.6
-		flame.Size = Vector3.new(FLAME_WIDTH, FLAME_WIDTH * 0.8, length)
+		-- the flame is the push zone, so it reaches exactly as far as the Run's FlameReach
+		local length = math.max(0.6, ship.FlameReach - FLAME_START)
+		local width = FLAME_WIDTH + length * 0.15
+		flame.Size = Vector3.new(width, FLAME_WIDTH * 0.8, length)
 		flame.CFrame = pivot * CFrame.new(0, 0, FLAME_START + length / 2)
 		flame.Color = if ship.IsStunned then FLAME_STUNNED elseif ship.IsBoosting then FLAME_BOOST else FLAME_SOFT
 		flame.Transparency = 0

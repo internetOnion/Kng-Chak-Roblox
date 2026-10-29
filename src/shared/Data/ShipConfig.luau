@@ -37,6 +37,21 @@ local ShipConfig = {
 	SpearTip = 2.6, -- centre to the spear's tip, along the nose
 	SpearHalfWidth = 0.33,
 	NozzleDist = 1.95, -- centre to the engine nozzle, where the flame starts
+	BreakArcDeg = 90, -- with the spear out, rocks within this angle of the nose break; behind it they bump
+
+	-- Bump
+	StunTime = 0.6, -- seconds without control after a bump
+	BumpKnock = 14, -- speed the ship is knocked away at
+
+	-- Push (the flame is the push zone)
+	PushRangeMin = 5, -- flame reach at the lowest throttle...
+	PushRange = 10, -- ...at full throttle
+	PushBoostRange = 12, -- ...while boosting
+	PushConeDeg = 42, -- half-angle of the flame's cone
+	PushKick = 5, -- shove away from the ship...
+	PushLift = 4, -- ...and away from the planet, both × the rock type's PushFactor
+	PushCooldown = 0.5, -- seconds before the same rock can be pushed again
+	PrimedTime = 5, -- seconds a pushed rock stays primed
 }
 
 export type ShipConfig = typeof(ShipConfig)

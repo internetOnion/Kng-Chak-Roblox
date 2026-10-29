@@ -17,6 +17,7 @@
 	the frame rate. Every tuning value comes from the Run's tuning (see Run/Tuning).
 ]]
 
+local Combat = require("../Combat/Combat")
 local Flight = require("../Ship/Flight")
 local PlanetHealth = require("../Combat/PlanetHealth")
 local Rng = require("../Util/Rng")
@@ -54,6 +55,7 @@ export type Setup = {
 export type Snapshot = {
 	Wave: number, -- 0 before the first wave starts
 	Phase: WaveDirector.Phase,
+	Score: number,
 	PlanetHp: number,
 	PlanetMaxHp: number,
 	Ship: Ship.Ship,
@@ -75,6 +77,7 @@ export type Run = typeof(setmetatable(
 		_rocks: { Rock.Rock },
 		_nextRockId: number,
 		_director: WaveDirector.WaveDirector,
+		_score: number,
 		_pending: number, -- frame time not simulated yet, less than one sub-step
 		_boostQueued: boolean, -- a boost press waiting for the next sub-step
 	},
@@ -107,6 +110,9 @@ local function tick(self: Run, input: Input, dt: number)
 	self._boostQueued = false
 	Flight.Step(self._ship, self._tuning, input, boostPressed, dt)
 	stepRocks(self, dt)
+	local combat = Combat.Step(self._ship, self._rocks, self._tuning, self.Events)
+	self._rocks = combat.survivors
+	self._score += combat.score
 	self._director:Step(dt, {
 		tuning = self._tuning,
 		events = self.Events,
@@ -132,6 +138,7 @@ function Run.new(setup: Setup?): Run
 		_rocks = {},
 		_nextRockId = 1,
 		_director = WaveDirector.new(Rng.new(setup and setup.Seed or 1), setup and setup.Waves),
+		_score = 0,
 		_pending = 0,
 		_boostQueued = false,
 	}, Run)
@@ -165,6 +172,7 @@ function Run.Snapshot(self: Run): Snapshot
 	return table.freeze({
 		Wave = self._director.Wave,
 		Phase = self._director.Phase,
+		Score = self._score,
 		PlanetHp = self._planet.Hp,
 		PlanetMaxHp = self._planet.MaxHp,
 		Ship = Ship.Snapshot(self._ship),
