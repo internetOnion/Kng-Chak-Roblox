@@ -10,14 +10,15 @@
 	  briefly stunned, and the rock is deflected.
 	- Bump: a rock touching the back half, or touching the soft nose when the spear
 	  is in, knocks the ship away, stuns it for StunTime and loses the combo.
-	- Push: the flame behind the ship is the push zone. A rock inside its cone and
-	  reach is shoved away from the ship and the planet (scaled by its type's
-	  PushFactor) and becomes primed for PrimedTime. A pushed comet slows to its
-	  slow fall speed for good.
+	- Push: the flame behind the ship is the push zone. A rock whose centre is
+	  inside its cone and whose near edge is inside its reach is shoved away from
+	  the ship and the planet (scaled by its type's PushFactor) and becomes primed
+	  for PrimedTime. A pushed comet slows to its slow fall speed for good.
 	- Flare: in orbit the flame fans outward instead (FlareRange, FlareConeDeg). A
 	  rock it touches is primed, pops up at FlareLift and hangs nearly still for
 	  FlareHang, ready for a slingshot. Flaring frees the ship from capture, so the
-	  slingshot is there to take. A rock can only be flared once.
+	  slingshot is there to take. A rock pops up and hangs only the first time, so
+	  nothing hovers above the orbit forever; after that the flare just primes it.
 
 	How a rock breaks decides what it's worth (see Data/ComboConfig):
 
@@ -51,7 +52,7 @@ export type Result = {
 
 local function push(ship: Ship.Ship, rock: Rock.Rock, ctx: Context.Context)
 	local flare = ship.IsInOrbit
-	if rock.PushCooldown > 0 or (flare and rock.IsFlared) then
+	if rock.PushCooldown > 0 then
 		return
 	end
 	local tuning, events = ctx.tuning, ctx.events
@@ -63,7 +64,7 @@ local function push(ship: Ship.Ship, rock: Rock.Rock, ctx: Context.Context)
 		rock.FallSpeed = slowFall
 		rock.Velocity *= 0.3
 	end
-	if flare then
+	if flare and not rock.IsFlared then -- a later flare only primes it again (below)
 		rock.IsFlared = true
 		rock.HangTime = config.FlareHang
 		rock.Velocity = outward * config.FlareLift
@@ -71,7 +72,7 @@ local function push(ship: Ship.Ship, rock: Rock.Rock, ctx: Context.Context)
 		ship.OrbitTime = 0
 		ship.SlingshotCooldown = 0
 		events.RockFlared:Fire(Rock.Snapshot(rock))
-	else
+	elseif not flare then
 		local factor = rock.Type.PushFactor
 		rock.Velocity += (ship.FlameDirection * config.PushKick + outward * config.PushLift) * factor
 	end
@@ -223,7 +224,7 @@ function Combat.Step(ship: Ship.Ship, ctx: Context.Context): Result
 			elseif ship.InvulnerableTime <= 0 then
 				bump(ship, rock, toRock, ctx)
 			end
-		elseif ship.FlameReach > config.NozzleDist and distance > 0.3 and distance < ship.FlameReach then
+		elseif ship.FlameReach > config.NozzleDist and distance > 0.3 and distance - radius < ship.FlameReach then
 			if offset:Dot(flame) / distance > cosCone then
 				push(ship, rock, ctx)
 			end

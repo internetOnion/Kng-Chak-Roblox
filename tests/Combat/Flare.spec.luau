@@ -89,6 +89,25 @@ describe("Orbit flare", function()
 		expect(counts.RockFlared).toBe(1)
 	end)
 
+	it("keeps a flared rock primed while the flare still touches it, without lifting it again", function()
+		local run = Run.new({
+			Waves = {},
+			ShipStart = Vector2.new(0, -TRACK),
+			ShipHeading = 0,
+			Rocks = { { Type = RockTypes.Iron, Position = Vector2.new(0, -(TRACK + 4.5)) } },
+			Tuning = { Ship = { OrbitEntryMin = 0, PrimedTime = 0.6 } },
+		})
+		local counts = count(run)
+		play(run, RunInput.Idle, 0.3)
+		expect(counts.RockFlared).toBe(1)
+		local hang = rock(run).HangTime
+		play(run, RunInput.Idle, 1) -- well past the primed time, still in the flare
+		expect(rock(run).IsPrimed).toBe(true)
+		expect(counts.RockPrimed).toBe(1) -- it never lost its priming
+		expect(counts.RockFlared).toBe(1)
+		expect(rock(run).HangTime < hang).toBe(true) -- the hang isn't started again
+	end)
+
 	it("frees a captured ship, so the slingshot is there to take", function()
 		local run = underRock(16)
 		play(run, RunInput.Idle, ShipConfig.CaptureTime + 0.2)
