@@ -1,110 +1,61 @@
 --!strict
 --[[
-	Rock: one rock in the arena (milestone 1, contract 3, area 2).
+	Rock: one rock's state in the simulation, as plain data.
 
-	    local rock = Rock.new(RockTypes.Rock, Vector2.new(0, 40))
-	    rock.Broken:Connect(function(cause) ... end)
-	    rock:Prime()
-	    rock:Break("Ram")
+	The Run owns its rocks and changes them as it steps. Everything else reads
+	them through the Run's snapshot (frozen copies) and never sets them. A rock
+	has no model: the client's rock view draws one for each rock in the snapshot.
+	Positions are arena positions (see Arena/ArenaSpace), with the planet at (0, 0).
 
-	The model is a clone of the prefab ReplicatedStorage.Assets.Rocks.Rock, sized
-	and tinted from the rock type. Its PrimeGlow highlight shows while primed.
-	Positions are arena positions (see Arena/ArenaSpace). This contract only holds
-	state: falling is task 10 and pushing is task 14.
-
-	Read the fields but never set them; use the methods so the model and events follow.
-
-	Events (each also fires the matching GameEvents event):
-	    Primed ()               on the first prime only
-	    Broken (cause: string)  the player destroyed it, e.g. cause "Ram"
+	    rock.Id        number    unique within its Run; views track models by it
+	    rock.Type      RockType  see Data/RockTypes
+	    rock.Position  Vector2   arena position
+	    rock.Velocity  Vector2   arena units per second
+	    rock.IsPrimed  boolean   pushed by the flame (milestone 1, flame push)
 ]]
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local ArenaSpace = require("../Arena/ArenaSpace")
-local GameEvents = require("../GameEvents")
+local ArenaConfig = require("../Data/ArenaConfig")
 local RockTypes = require("../Data/RockTypes")
-local Signal = require("../Util/Signal")
+
+export type Rock = {
+	Id: number,
+	Type: RockTypes.RockType,
+	Position: Vector2,
+	Velocity: Vector2,
+	IsPrimed: boolean,
+}
 
 local Rock = {}
-Rock.__index = Rock
 
-export type Rock = typeof(setmetatable(
-	{} :: {
-		Type: RockTypes.RockType,
-		Position: Vector2,
-		Velocity: Vector2,
-		IsPrimed: boolean,
-		IsBroken: boolean,
-		Model: BasePart,
-		Primed: Signal.Signal,
-		Broken: Signal.Signal,
-	},
-	Rock
-))
-
-local function getPrefab(): BasePart
-	local assets = ReplicatedStorage:WaitForChild("Assets")
-	return assets:WaitForChild("Rocks"):WaitForChild("Rock") :: BasePart
-end
-
--- Spawns a rock of `rockType` at an arena position. `parent` defaults to Workspace.
-function Rock.new(rockType: RockTypes.RockType, position: Vector2, parent: Instance?): Rock
-	local model = getPrefab():Clone()
-	model.Name = rockType.Id
-	model.Size = Vector3.one * rockType.Radius * 2
-	model.Color = rockType.Tint
-	model.Material = if rockType.IsMetal then Enum.Material.Metal else Enum.Material.SmoothPlastic
-	model.CFrame = ArenaSpace.CFrameAt(position)
-	model.Parent = parent or workspace
-
-	return setmetatable({
+function Rock.new(id: number, rockType: RockTypes.RockType, position: Vector2): Rock
+	return {
+		Id = id,
 		Type = rockType,
 		Position = position,
 		Velocity = Vector2.zero,
 		IsPrimed = false,
-		IsBroken = false,
-		Model = model,
-		Primed = Signal.new(),
-		Broken = Signal.new(),
-	}, Rock)
+	}
 end
 
-function Rock.SetPosition(self: Rock, position: Vector2)
-	self.Position = position
-	self.Model.CFrame = ArenaSpace.CFrameAt(position)
-end
-
--- Marks the rock as pushed by the flame. Priming again does nothing.
-function Rock.Prime(self: Rock)
-	if self.IsPrimed or self.IsBroken then
+-- Moves the rock straight toward the planet at its type's fall speed for dt seconds.
+function Rock.Fall(rock: Rock, dt: number)
+	local distance = rock.Position.Magnitude
+	if distance < 1e-6 then
+		rock.Velocity = Vector2.zero
 		return
 	end
-	self.IsPrimed = true
-	local glow = self.Model:FindFirstChild("PrimeGlow")
-	if glow and glow:IsA("Highlight") then
-		glow.Enabled = true
-	end
-	self.Primed:Fire()
-	GameEvents.RockPrimed:Fire(self)
+	rock.Velocity = -rock.Position / distance * rock.Type.FallSpeed
+	rock.Position += rock.Velocity * dt
 end
 
--- The player destroyed the rock: fires Broken, then removes it.
-function Rock.Break(self: Rock, cause: string)
-	if self.IsBroken then
-		return
-	end
-	self.IsBroken = true
-	self.Broken:Fire(cause)
-	GameEvents.RockBroken:Fire(self, cause)
-	self:Destroy()
+-- True once the rock's edge has reached the planet's surface.
+function Rock.TouchesPlanet(rock: Rock): boolean
+	return rock.Position.Magnitude <= ArenaConfig.PlanetRadius + rock.Type.Radius
 end
 
--- Removes the rock without breaking it (it hit the planet, or the run reset).
-function Rock.Destroy(self: Rock)
-	self.Model:Destroy()
-	self.Primed:DisconnectAll()
-	self.Broken:DisconnectAll()
+-- A frozen copy of the rock, safe to hand to code outside the simulation.
+function Rock.Snapshot(rock: Rock): Rock
+	return table.freeze(table.clone(rock))
 end
 
-return Rock
+return table.freeze(Rock)

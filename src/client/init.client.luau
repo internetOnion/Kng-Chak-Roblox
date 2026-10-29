@@ -1,8 +1,6 @@
 --[[
 	Client entry point. The game runs here, on the player's device: flight, rocks,
 	combat and UI all live on the client, and the server stays thin.
-
-	Milestone 1 systems get started from here as they land.
 ]]
 
 local RunService = game:GetService("RunService")
@@ -10,7 +8,6 @@ local RunService = game:GetService("RunService")
 -- Studio-only dev tools. Switch them on or off here; they never run in a live game.
 local DEV_TOOLS = {
 	EventLogger = true, -- prints every GameEvents event to Output
-	ContractsDemo = true, -- spawns one rock of each type and exercises the week-1 contracts
 }
 
 if RunService:IsStudio() then
@@ -21,3 +18,5 @@ if RunService:IsStudio() then
 		end
 	end
 end
+
+require(script.Game)()

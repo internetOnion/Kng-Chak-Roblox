@@ -21,5 +21,3 @@ Shared game code (`src/shared`) has to load both in Roblox and in Lune, so:
 - **Requires** are path strings: `require("../Util/Signal")`, never `require(script.Parent...)`. Both Roblox and Lune resolve them the same way.
 - **Roblox globals available in tests:** `task`, `Vector2`, `Vector3`, `Color3` (including `fromHex`), `CFrame` and `Enum`. The runner installs them from Lune's roblox library.
 - **Not available:** `game`, `workspace`, `Instance`-based APIs and `Random`. Code that needs them belongs in a view or adapter, not in the simulation. Randomness comes from a seeded RNG passed into the Run.
-
-`Rocks/Rock` and `Ship/ShipController` still use `game` (the rock creates its model) until the Rock's state moves into the simulation, so they can't be tested here yet.

@@ -1,45 +1,51 @@
 --!strict
 --[[
-	GameEvents: the one place for game-wide events (milestone 1, contract 1, area 4).
+	GameEvents: the active Run's events, in one place that outlives every Run.
 
-	UI, audio and game flow listen here instead of reaching into another area's
-	scripts. Gameplay code fires them and never needs to know who is listening.
+	Each Run owns its own event hub (see Run/RunEvents). GameEvents has the same
+	events and re-fires whatever the Run it follows fires, so a listener connected
+	here keeps working across restarts without knowing which Run is active.
 
 	    local GameEvents = require(ReplicatedStorage.KngChak.GameEvents)
 	    GameEvents.PlanetHit:Connect(function(rock, damagePercent) ... end)
 
-	The game runs on the player's client, so these fire there. A script on the
-	server gets its own separate copy that the game never fires.
+	    GameEvents.Follow(run.Events) -- whoever starts a Run points GameEvents at it
+	    GameEvents.Follow(nil)        -- stop forwarding
 
-	Each event lists its arguments, in order. Fire them in that order.
+	The events and their arguments are listed in Run/RunEvents. Only the Run fires
+	them; never fire GameEvents directly. The game runs on the player's client, so
+	these fire there. A script on the server gets its own copy that never fires.
 ]]
 
+local RunEvents = require("./Run/RunEvents")
 local Signal = require("./Util/Signal")
 
-local GameEvents = {
-	-- (rock: Rock, cause: string)
-	-- The player destroyed a rock. Fired by Rock:Break(). cause says how, e.g. "Ram".
-	RockBroken = Signal.new(),
-
-	-- (rock: Rock)
-	-- A rock became primed (pushed by the flame). Fired by Rock:Prime(), only on the first prime.
-	RockPrimed = Signal.new(),
-
-	-- (rock: Rock, damagePercent: number)
-	-- A rock reached the planet. Fired by the rock fall code (task 10).
-	PlanetHit = Signal.new(),
-
-	-- (wave: number)
-	-- A wave began. Fired by the wave spawner (task 12).
-	WaveStarted = Signal.new(),
-
-	-- (wave: number)
-	-- Every rock of the wave is gone and the planet survived. Fired by the wave spawner (task 12).
-	WaveCleared = Signal.new(),
-
-	-- (wave: number)
-	-- Planet HP reached 0 during this wave. Fired by game flow (task 16).
-	GameOver = Signal.new(),
+export type GameEvents = RunEvents.RunEvents & {
+	Follow: (events: RunEvents.RunEvents?) -> (),
 }
 
-return table.freeze(GameEvents)
+local forwarded = RunEvents.new()
+local links: { Signal.Connection } = {}
+
+local function follow(events: RunEvents.RunEvents?)
+	for _, link in links do
+		link:Disconnect()
+	end
+	table.clear(links)
+	if not events then
+		return
+	end
+	for _, name in RunEvents.Names do
+		local target = RunEvents.Get(forwarded, name)
+		table.insert(
+			links,
+			RunEvents.Get(events, name):Connect(function(...)
+				target:Fire(...)
+			end)
+		)
+	end
+end
+
+local GameEvents = setmetatable({ Follow = follow }, { __index = forwarded })
+
+return (table.freeze(GameEvents) :: any) :: GameEvents
