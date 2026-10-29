@@ -26,6 +26,7 @@ local FLAME_TRANSPARENCY = 0.05
 local HEAT = {
 	soft = { Color3.fromHex("#ff4a1c"), Color3.fromHex("#ff9a1f"), Color3.fromHex("#ffe066") },
 	boost = { Color3.fromHex("#ffa030"), Color3.fromHex("#ffe08a"), Color3.fromHex("#ffffff") },
+	slingshot = { Color3.fromHex("#2f7dff"), Color3.fromHex("#7fe6ff"), Color3.fromHex("#f2ffff") },
 	stunned = { Color3.fromHex("#40444d"), Color3.fromHex("#6a707c"), Color3.fromHex("#9aa0aa") },
 }
 local BANDS = { "FlameEdge", "FlameMid", "FlameCore" }
@@ -37,6 +38,7 @@ export type ShipLook = {
 	Facing: Vector2,
 	IsSpearOut: boolean,
 	IsBoosting: boolean,
+	IsSlingshotting: boolean,
 	IsStunned: boolean,
 	FlameReach: number,
 }
@@ -103,7 +105,11 @@ function ShipView.Update(self: ShipView, ship: ShipLook)
 		part.Transparency = if ship.IsSpearOut then 0 else 1
 	end
 
-	local heat = if ship.IsStunned then HEAT.stunned elseif ship.IsBoosting then HEAT.boost else HEAT.soft
+	local heat = if ship.IsStunned
+		then HEAT.stunned
+		elseif ship.IsSlingshotting then HEAT.slingshot
+		elseif ship.IsBoosting then HEAT.boost
+		else HEAT.soft
 	local length = math.max(PILOT_LENGTH, ship.FlameReach - FLAME_START)
 	for i, band in self._bands do
 		local bandLength = length * band.scale

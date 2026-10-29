@@ -15,6 +15,9 @@
 	    ship.IsStunned   boolean  after a bad bump: no control, grey flame
 	    ship.FlameReach  number   how far the flame (the push zone) reaches from the ship's centre
 	    ship.IsInOrbit   boolean  locked onto the orbit track (it can't touch the planet)
+	    ship.IsCaptured  boolean  in orbit past the capture time: leaving costs a boost
+	    ship.IsSlingshotting boolean  diving out of orbit at slingshot speed, spear out
+	    ship.LockId      number?  the rock the slingshot is locked onto, if any
 ]]
 
 export type Ship = {
@@ -38,6 +41,11 @@ export type Ship = {
 	OrbitSpeed: number, -- speed along the orbit track
 	OrbitTime: number, -- seconds since locking on
 	OrbitRelock: number, -- seconds left before the band can lock the ship again
+	IsCaptured: boolean,
+	IsSlingshotting: boolean,
+	SlingshotTime: number, -- seconds of slingshot left
+	SlingshotCooldown: number, -- seconds left before leaving orbit gives another slingshot
+	LockId: number?,
 }
 
 local Ship = {}
@@ -66,6 +74,11 @@ function Ship.new(position: Vector2, fuel: number, heading: number?): Ship
 		OrbitSpeed = 0,
 		OrbitTime = 0,
 		OrbitRelock = 0,
+		IsCaptured = false,
+		IsSlingshotting = false,
+		SlingshotTime = 0,
+		SlingshotCooldown = 0,
+		LockId = nil,
 	}
 end
 

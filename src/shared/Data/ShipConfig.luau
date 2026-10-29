@@ -40,6 +40,15 @@ local ShipConfig = {
 	OrbitSnap = 3.5, -- how gently you settle onto the orbit track
 	OrbitRegenMult = 4, -- fuel refills this much faster while in orbit
 	OrbitRelockTime = 0.5, -- seconds after leaving before the band can lock you again
+	CaptureTime = 2, -- leave within this many seconds for a free slingshot; after it, leaving costs a boost
+
+	-- Slingshot (aim outward from orbit to dive)
+	SlingshotSpeed = 42,
+	SlingshotDuration = 0.5, -- longest slingshot; with a locked rock it ends just after reaching it
+	SlingshotNoTarget = 0.3, -- slingshot length when nothing is ahead
+	SlingshotCooldown = 3.5, -- seconds after a slingshot before leaving orbit gives another
+	LockRange = 26, -- a slingshot locks onto the rock ahead within this range...
+	LockConeDeg = 35, -- ...and within this angle of where it launches
 
 	-- Body (the hit zone matches the model: prototype sizes at shipScale 1.3)
 	HitRadius = 1.56, -- body hit radius

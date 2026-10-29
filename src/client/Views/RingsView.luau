@@ -3,11 +3,12 @@
 	RingsView: the orbit band and the arena edge, drawn from the arena data.
 
 	    local rings = RingsView.new(folder)
-	    rings:Update(snapshot.Ship.Position, run:GetTuning().Arena) -- every frame
+	    rings:Update(snapshot.Ship, run:GetTuning().Arena) -- every frame
 
 	Each ring is a loop of parts at a radius taken from the arena values, so
 	changing a value moves its ring. The orbit band is a dashed loop of glowing
-	toy beads (it's energy); the edge is a thin solid line that stays hidden until
+	toy beads (it's energy), turning red while the ship is captured in orbit (only
+	a boost gets it out); the edge is a thin solid line that stays hidden until
 	the ship is within EdgeShowDist of it, then fades in.
 ]]
 
@@ -20,6 +21,7 @@ local ViewMath = require(KngChak.Arena.ViewMath)
 
 local LIFT = 0.5 -- studs above the play plane
 local BAND_COLOR = Color3.fromHex("#6ff3ff")
+local CAPTURED_COLOR = Color3.fromHex("#ff4d5e")
 local BAND_TRANSPARENCY = 0.25
 local BAND_DASHES = 36
 local BAND_DASH = Vector3.new(0.45, 0.3, 1.4) -- each bead's width, height and length
@@ -42,6 +44,7 @@ export type RingsView = typeof(setmetatable(
 		_band: Ring?,
 		_edge: Ring?,
 		_edgeTransparency: number,
+		_bandColor: Color3?,
 	},
 	RingsView
 ))
@@ -99,10 +102,14 @@ end
 
 -- Rings around `centre` (default: the arena's centre).
 function RingsView.new(parent: Instance, centre: Vector2?): RingsView
-	return setmetatable(
-		{ _parent = parent, _centre = centre or Vector2.zero, _band = nil, _edge = nil, _edgeTransparency = -1 },
-		RingsView
-	)
+	return setmetatable({
+		_parent = parent,
+		_centre = centre or Vector2.zero,
+		_band = nil,
+		_edge = nil,
+		_edgeTransparency = -1,
+		_bandColor = nil,
+	}, RingsView)
 end
 
 -- The ring if it's still at `radius`, otherwise a new one built there.
@@ -116,7 +123,14 @@ local function ringAt(ring: Ring?, radius: number, build: () -> Ring): Ring
 	return build()
 end
 
-function RingsView.Update(self: RingsView, shipPosition: Vector2, arena: ArenaConfig.ArenaConfig)
+-- The fields the view reads. A Run snapshot's Ship has them all.
+export type ShipPlace = {
+	Position: Vector2,
+	IsCaptured: boolean,
+}
+
+function RingsView.Update(self: RingsView, ship: ShipPlace, arena: ArenaConfig.ArenaConfig)
+	local shipPosition = ship.Position
 	local oldBand = self._band
 	local bandRadius = arena.PlanetRadius + arena.OrbitBandTop
 	local band = ringAt(oldBand, bandRadius, function()
@@ -135,6 +149,14 @@ function RingsView.Update(self: RingsView, shipPosition: Vector2, arena: ArenaCo
 	if band ~= oldBand then
 		setTransparency(band, BAND_TRANSPARENCY)
 		self._band = band
+		self._bandColor = nil
+	end
+	local color = if ship.IsCaptured then CAPTURED_COLOR else BAND_COLOR
+	if color ~= self._bandColor then
+		for _, part in band.parts do
+			part.Color = color
+		end
+		self._bandColor = color
 	end
 
 	local oldEdge = self._edge
