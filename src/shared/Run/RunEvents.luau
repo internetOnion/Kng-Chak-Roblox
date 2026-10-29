@@ -20,6 +20,10 @@ export type RunEvents = {
 	-- (primed, then slingshot).
 	RockBroken: Signal.Signal,
 
+	-- (rock: Rock, shards: { Rock })
+	-- A broken rock split into shards (a cluster). RockBroken fires for it first.
+	RockSplit: Signal.Signal,
+
 	-- (rock: Rock)
 	-- A rock became primed (pushed by the flame), on the first prime only.
 	RockPrimed: Signal.Signal,
@@ -97,6 +101,7 @@ local RunEvents = {}
 -- Every event name, in a fixed order. Code that handles all events loops over this.
 RunEvents.Names = table.freeze({
 	"RockBroken",
+	"RockSplit",
 	"RockPrimed",
 	"RockFlared",
 	"PlanetHit",

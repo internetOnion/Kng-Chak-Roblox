@@ -47,6 +47,12 @@ end
 local function describe(value: any): string
 	if type(value) == "table" and type(value.Type) == "table" then
 		return `{value.Type.Id}#{value.Id}`
+	elseif type(value) == "table" then
+		local parts = {}
+		for _, item in value do
+			table.insert(parts, describe(item))
+		end
+		return `[{table.concat(parts, ",")}]`
 	elseif typeof(value) == "Vector2" then
 		return string.format("(%.2f,%.2f)", value.X, value.Y)
 	elseif type(value) == "number" then

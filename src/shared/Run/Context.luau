@@ -10,7 +10,9 @@
 
 local Combo = require("../Combat/Combo")
 local PlanetHealth = require("../Combat/PlanetHealth")
+local Rng = require("../Util/Rng")
 local Rock = require("../Rocks/Rock")
+local RockTypes = require("../Data/RockTypes")
 local RunEvents = require("./RunEvents")
 local Tuning = require("./Tuning")
 
@@ -20,6 +22,15 @@ export type Context = {
 	rocks: { Rock.Rock },
 	combo: Combo.Combo,
 	planet: PlanetHealth.PlanetHealth,
+	rng: Rng.Rng, -- for combat's random choices (where shards fly); seeded from the Run's seed
+	-- A new rock with the next id, not yet in the arena: the caller adds it to the rocks it returns.
+	newRock: (
+		rockType: RockTypes.RockType,
+		position: Vector2,
+		speedMult: number?,
+		velocity: Vector2?,
+		grace: number?
+	) -> Rock.Rock,
 }
 
 return table.freeze({})

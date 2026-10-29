@@ -95,7 +95,7 @@ local function lockTarget(ship: Ship.Ship, ctx: Context.Context, heading: number
 	for _, rock in ctx.rocks do
 		local offset = rock.Position - ship.Position
 		local distance = offset.Magnitude
-		if distance >= 0.5 and distance <= config.LockRange then
+		if rock.GraceTime <= 0 and distance >= 0.5 and distance <= config.LockRange then
 			local ahead = offset:Dot(facing) / distance
 			local score = distance * (2 - ahead)
 			if ahead >= cosCone and score < bestScore then
