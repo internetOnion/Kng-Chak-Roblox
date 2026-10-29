@@ -8,7 +8,7 @@ local describe, it, expect = TestKit.describe, TestKit.it, TestKit.expect
 
 -- A run whose one rock hits the planet within a second.
 local function newRun(): Run.Run
-	return Run.new({ Rocks = { { Type = RockTypes.Rock, Position = Vector2.new(0, 12) } } })
+	return Run.new({ Waves = {}, Rocks = { { Type = RockTypes.Rock, Position = Vector2.new(0, 12) } } })
 end
 
 local function play(run: Run.Run)
