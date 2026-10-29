@@ -5,8 +5,9 @@
 	    local RockTypes = require(ReplicatedStorage.KngChak.Data.RockTypes)
 	    local rock = Rock.new(RockTypes.Rock, position)
 
-	Values come from the web prototype's TYPES table. Each definition is frozen:
-	game code reads it and never changes it.
+	Values come from the web prototype's TYPES table; colours come from the Toy Box
+	palette in docs/art-guide.md. Each definition is frozen: game code reads it and
+	never changes it.
 ]]
 
 export type RockType = {
@@ -14,8 +15,8 @@ export type RockType = {
 	Radius: number, -- arena units (the prototype's `size` is a radius)
 	FallSpeed: number, -- arena units per second toward the planet, at wave 1
 	SlowFallSpeed: number?, -- comet only: fall speed after it has been pushed
-	Tint: Color3,
-	Glow: Color3?, -- energy glow, for rocks that have one
+	Tint: Color3, -- body colour; the rock view paints the model's Body parts with it
+	Glow: Color3?, -- energy glow, for rocks that have one (the comet's tail)
 	IsMetal: boolean,
 	Score: number, -- points for breaking it
 	PushFactor: number, -- how far a flame push moves it (1 = normal, lower = moves less)
@@ -31,7 +32,7 @@ local RockTypes = {
 		Id = "Rock",
 		Radius = 1.4,
 		FallSpeed = 3.0,
-		Tint = Color3.fromHex("#b08a68"),
+		Tint = Color3.fromHex("#c98b55"),
 		IsMetal = false,
 		Score = 100,
 		PushFactor = 1.0,
@@ -42,8 +43,8 @@ local RockTypes = {
 		Radius = 1.1,
 		FallSpeed = 7.5,
 		SlowFallSpeed = 2.0,
-		Tint = Color3.fromHex("#bff6ff"),
-		Glow = Color3.fromHex("#2a8fa0"),
+		Tint = Color3.fromHex("#c9f7ff"),
+		Glow = Color3.fromHex("#7fe6ff"),
 		IsMetal = false,
 		Score = 150,
 		PushFactor = 0.8,
@@ -53,7 +54,7 @@ local RockTypes = {
 		Id = "Iron",
 		Radius = 1.8,
 		FallSpeed = 1.8,
-		Tint = Color3.fromHex("#5d6b7d"),
+		Tint = Color3.fromHex("#7487a3"),
 		IsMetal = true,
 		Score = 200,
 		PushFactor = 0.3,
@@ -63,7 +64,7 @@ local RockTypes = {
 		Id = "Cluster",
 		Radius = 2.4,
 		FallSpeed = 2.6,
-		Tint = Color3.fromHex("#8a5a7a"),
+		Tint = Color3.fromHex("#b25fd0"),
 		IsMetal = false,
 		Score = 100,
 		PushFactor = 0.6,
@@ -73,7 +74,7 @@ local RockTypes = {
 		Id = "Shard",
 		Radius = 0.85,
 		FallSpeed = 3.5,
-		Tint = Color3.fromHex("#c49a74"),
+		Tint = Color3.fromHex("#e8b27a"),
 		IsMetal = false,
 		Score = 50,
 		PushFactor = 1.4,
@@ -83,7 +84,7 @@ local RockTypes = {
 		Id = "Gold",
 		Radius = 1.5,
 		FallSpeed = 2.4,
-		Tint = Color3.fromHex("#ffd166"),
+		Tint = Color3.fromHex("#ffcf2e"),
 		Glow = Color3.fromHex("#5a3c00"),
 		IsMetal = true,
 		Score = 500,

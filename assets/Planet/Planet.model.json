@@ -1,15 +1,198 @@
 {
-  "className": "Part",
-  "properties": {
-    "Shape": "Ball",
-    "Size": [20, 20, 20],
-    "Color": [0.18, 0.77, 1],
-    "Material": "SmoothPlastic",
-    "TopSurface": "Smooth",
-    "BottomSurface": "Smooth",
-    "Anchored": true,
-    "CanCollide": false,
-    "CanTouch": false,
-    "CastShadow": false
-  }
+  "className": "Model",
+  "children": [
+    {
+      "name": "Ocean",
+      "className": "Part",
+      "properties": {
+        "Size": [
+          20,
+          20,
+          20
+        ],
+        "Position": [
+          0,
+          0,
+          0
+        ],
+        "Color": [
+          0.1843,
+          0.7686,
+          1.0
+        ],
+        "Material": "SmoothPlastic",
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "LandA",
+      "className": "Part",
+      "properties": {
+        "Size": [
+          7,
+          7,
+          7
+        ],
+        "Position": [
+          4.2,
+          5.6,
+          3.2
+        ],
+        "Color": [
+          0.3686,
+          0.8784,
+          0.3686
+        ],
+        "Material": "SmoothPlastic",
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "LandB",
+      "className": "Part",
+      "properties": {
+        "Size": [
+          6,
+          6,
+          6
+        ],
+        "Position": [
+          -5.4,
+          5.2,
+          2.2
+        ],
+        "Color": [
+          0.3686,
+          0.8784,
+          0.3686
+        ],
+        "Material": "SmoothPlastic",
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "LandC",
+      "className": "Part",
+      "properties": {
+        "Size": [
+          5,
+          5,
+          5
+        ],
+        "Position": [
+          2.6,
+          6.8,
+          -3.6
+        ],
+        "Color": [
+          0.2471,
+          0.702,
+          0.2902
+        ],
+        "Material": "SmoothPlastic",
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "LandD",
+      "className": "Part",
+      "properties": {
+        "Size": [
+          4,
+          4,
+          4
+        ],
+        "Position": [
+          -3.2,
+          7.6,
+          -1.4
+        ],
+        "Color": [
+          0.2471,
+          0.702,
+          0.2902
+        ],
+        "Material": "SmoothPlastic",
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "IceCap",
+      "className": "Part",
+      "properties": {
+        "Size": [
+          6,
+          6,
+          6
+        ],
+        "Position": [
+          0,
+          4.4,
+          -7.6
+        ],
+        "Color": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "Material": "SmoothPlastic",
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Outline",
+      "className": "Highlight",
+      "properties": {
+        "OutlineColor": [
+          0,
+          0,
+          0
+        ],
+        "OutlineTransparency": 0,
+        "FillColor": [
+          1.0,
+          0.3098,
+          0.8471
+        ],
+        "FillTransparency": 1,
+        "DepthMode": "Occluded"
+      }
+    }
+  ]
 }

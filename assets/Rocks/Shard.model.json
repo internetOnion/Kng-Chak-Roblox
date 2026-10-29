@@ -1,0 +1,90 @@
+{
+  "className": "Model",
+  "children": [
+    {
+      "name": "Body",
+      "className": "Part",
+      "properties": {
+        "Size": [
+          1.35,
+          1.35,
+          1.35
+        ],
+        "Position": [
+          0,
+          0,
+          0
+        ],
+        "Color": [
+          0.9098,
+          0.698,
+          0.4784
+        ],
+        "Material": "SmoothPlastic",
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Orientation": [
+          35,
+          45,
+          0
+        ]
+      }
+    },
+    {
+      "name": "BodyTip",
+      "className": "Part",
+      "properties": {
+        "Size": [
+          0.7,
+          0.7,
+          0.7
+        ],
+        "Position": [
+          0,
+          0.3,
+          -0.75
+        ],
+        "Color": [
+          0.9098,
+          0.698,
+          0.4784
+        ],
+        "Material": "SmoothPlastic",
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Orientation": [
+          45,
+          0,
+          45
+        ]
+      }
+    },
+    {
+      "name": "Outline",
+      "className": "Highlight",
+      "properties": {
+        "OutlineColor": [
+          0,
+          0,
+          0
+        ],
+        "OutlineTransparency": 0,
+        "FillColor": [
+          1.0,
+          0.3098,
+          0.8471
+        ],
+        "FillTransparency": 1,
+        "DepthMode": "Occluded"
+      }
+    }
+  ]
+}
