@@ -29,7 +29,7 @@ export type RunEvents = {
 	RockFlared: Signal.Signal,
 
 	-- (rock: Rock, damagePercent: number)
-	-- A rock reached the planet. Planet HP drops by damagePercent right after.
+	-- A rock reached the planet. Right after, damagePercent comes off the shield first, then HP.
 	PlanetHit: Signal.Signal,
 
 	-- (rock: Rock, knock: Vector2)
@@ -65,6 +65,10 @@ export type RunEvents = {
 	-- A combo move repaired the planet by amount % (cause is the RockBroken cause).
 	Healed: Signal.Signal,
 
+	-- (shield: number, delta: number)
+	-- The planet's shield changed: heals past full HP build it, impacts take it first.
+	ShieldChanged: Signal.Signal,
+
 	-- (amount: number)
 	-- Breaking a primed rock gave fuel back.
 	FuelRefunded: Signal.Signal,
@@ -98,6 +102,7 @@ RunEvents.Names = table.freeze({
 	"ComboChanged",
 	"Perfect",
 	"Healed",
+	"ShieldChanged",
 	"FuelRefunded",
 	"WaveStarted",
 	"WaveCleared",
