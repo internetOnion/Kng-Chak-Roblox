@@ -13,6 +13,7 @@
 	Input reaches the Run through a replay recorder, rounded the way recordings
 	store it. In Studio, F7 prints the current run's seed and recording to Output
 	as a Luau module: save it under tests/Replays to replay the run exactly.
+	Also in Studio, T opens the live tuning panel (see Dev/TuningPanel).
 ]]
 
 local Players = game:GetService("Players")
@@ -24,6 +25,7 @@ local KngChak = ReplicatedStorage.KngChak
 local GameEvents = require(KngChak.GameEvents)
 local Replay = require(KngChak.Run.Replay)
 local Run = require(KngChak.Run.Run)
+local Tuning = require(KngChak.Run.Tuning)
 
 local CameraView = require(script.Parent.Views.CameraView)
 local Device = require(script.Parent.Device)
@@ -34,6 +36,7 @@ local PlayerInput = require(script.Parent.Input.PlayerInput)
 local RingsView = require(script.Parent.Views.RingsView)
 local RockView = require(script.Parent.Views.RockView)
 local ShipView = require(script.Parent.Views.ShipView)
+local TuningPanel = require(script.Parent.Dev.TuningPanel)
 
 local DUMP_KEY = Enum.KeyCode.F7 -- Studio only: print the current run's recording
 
@@ -49,14 +52,15 @@ type Session = {
 
 type State = "Start" | "Playing" | "Over"
 
--- A new Run and its views. The seed is the only randomness the Run gets; it's picked here, outside it.
-local function newSession(): Session
+-- A new Run and its views, with the tuning panel's overrides (if any).
+-- The seed is the only randomness the Run gets; it's picked here, outside it.
+local function newSession(overrides: Tuning.Overrides?): Session
 	local folder = Instance.new("Folder")
 	folder.Name = "Arena"
 	folder.Parent = workspace
 
 	local seed = Random.new():NextInteger(1, 2 ^ 31 - 2)
-	local run = Run.new({ Seed = seed })
+	local run = Run.new({ Seed = seed, Tuning = overrides })
 	GameEvents.Follow(run.Events)
 
 	PlanetView.new(folder)
@@ -85,6 +89,7 @@ return function()
 	local controls = PlayerInput.new(playerGui)
 	local camera = CameraView.new()
 
+	local overrides: Tuning.Overrides? = nil
 	local session = newSession()
 	local snapshot = session.run:Snapshot()
 	local state: State = "Start"
@@ -98,17 +103,24 @@ return function()
 
 	local function restart()
 		endSession(session)
-		session = newSession()
+		session = newSession(overrides)
 		snapshot = session.run:Snapshot()
 		play()
 	end
 
 	if RunService:IsStudio() then
+		TuningPanel.new(playerGui, function(changes: Tuning.Overrides)
+			overrides = changes
+			session.run:SetTuning(changes)
+		end)
 		UserInputService.InputBegan:Connect(function(input: InputObject)
 			local recorder = session.recorder
 			if input.KeyCode == DUMP_KEY and recorder then
 				local recording = recorder:Finish(session.log, session.run)
 				print(`[Replay] seed {recording.Seed}, {#recording.Frames} frames, {#recording.Events} events:`)
+				if overrides and next(overrides) then
+					warn("[Replay] the tuning panel changed values during this run, so it won't replay exactly")
+				end
 				print(Replay.Encode(recording))
 			end
 		end)
