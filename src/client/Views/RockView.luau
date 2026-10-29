@@ -6,9 +6,12 @@
 	    rocks:Update(run:Snapshot().Rocks) -- every frame, after the Run steps
 
 	Update makes a model for each new rock, moves the ones it already has and
-	removes models whose rock is gone. Models are clones of
-	ReplicatedStorage.Assets.Rocks.Rock, sized and tinted from the rock's type; the
-	prefab's PrimeGlow highlight shows while the rock is primed. The view only
+	removes models whose rock is gone. Each rock type's model is the one named
+	after it in ReplicatedStorage.Assets.Rocks (Assets.Rocks.Rock if there's none),
+	built at radius 1 with its front along -Z. The view scales it to the type's
+	radius, paints its Body parts with the type's tint and points it at the planet.
+	Its Outline highlight is black, and pink while the rock is primed. Swapping a
+	model in the assets folder changes the rock with no code change. The view only
 	reads the snapshot and never changes the Run.
 ]]
 
@@ -19,6 +22,15 @@ local ArenaSpace = require(KngChak.Arena.ArenaSpace)
 local Rock = require(KngChak.Rocks.Rock)
 
 local LIFT = 2 -- studs above the play plane (see the art guide's heights)
+local OUTLINE = Color3.fromHex("#000000")
+local PRIMED = Color3.fromHex("#ff4fd8")
+local PRIMED_FILL = 0.55 -- fill transparency while primed
+
+type Drawn = {
+	model: Model,
+	outline: Highlight?,
+	primed: boolean?,
+}
 
 local RockView = {}
 RockView.__index = RockView
@@ -26,55 +38,65 @@ RockView.__index = RockView
 export type RockView = typeof(setmetatable(
 	{} :: {
 		_parent: Instance,
-		_prefab: BasePart,
-		_models: { [number]: BasePart }, -- by rock Id
+		_prefabs: Folder,
+		_drawn: { [number]: Drawn }, -- by rock Id
 	},
 	RockView
 ))
 
 function RockView.new(parent: Instance): RockView
-	local prefab = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Rocks"):WaitForChild("Rock") :: BasePart
-	return setmetatable({ _parent = parent, _prefab = prefab, _models = {} }, RockView)
+	local prefabs = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Rocks") :: Folder
+	return setmetatable({ _parent = parent, _prefabs = prefabs, _drawn = {} }, RockView)
 end
 
-local function build(self: RockView, rock: Rock.Rock): BasePart
-	local model = self._prefab:Clone()
+local function build(self: RockView, rock: Rock.Rock): Drawn
+	local prefab = (self._prefabs:FindFirstChild(rock.Type.Id) or self._prefabs:WaitForChild("Rock")) :: Model
+	local model = prefab:Clone()
 	model.Name = rock.Type.Id
-	model.Size = Vector3.one * rock.Type.Radius * 2
-	model.Color = rock.Type.Tint
-	model.Material = if rock.Type.IsMetal then Enum.Material.Metal else Enum.Material.SmoothPlastic
+	model.WorldPivot = CFrame.identity -- assets are built around the origin; Studio may have picked another pivot
+	model:ScaleTo(rock.Type.Radius)
+	for _, part in model:GetDescendants() do
+		if part:IsA("BasePart") and string.sub(part.Name, 1, 4) == "Body" then
+			part.Color = rock.Type.Tint
+		end
+	end
 	model.Parent = self._parent
-	return model
+	return { model = model, outline = model:FindFirstChildOfClass("Highlight"), primed = nil }
 end
 
 function RockView.Update(self: RockView, rocks: { Rock.Rock })
 	local seen = {}
 	for _, rock in rocks do
 		seen[rock.Id] = true
-		local model = self._models[rock.Id]
-		if not model then
-			model = build(self, rock)
-			self._models[rock.Id] = model
+		local drawn = self._drawn[rock.Id]
+		if not drawn then
+			drawn = build(self, rock)
+			self._drawn[rock.Id] = drawn
 		end
-		model.CFrame = ArenaSpace.CFrameAt(rock.Position, nil, LIFT)
-		local glow = model:FindFirstChild("PrimeGlow")
-		if glow and glow:IsA("Highlight") then
-			glow.Enabled = rock.IsPrimed
+		-- front toward the planet, so a comet's tail streams out behind it
+		drawn.model:PivotTo(ArenaSpace.CFrameAt(rock.Position, -rock.Position, LIFT))
+
+		local outline = drawn.outline
+		if outline and drawn.primed ~= rock.IsPrimed then
+			drawn.primed = rock.IsPrimed
+			outline.OutlineColor = if rock.IsPrimed then PRIMED else OUTLINE
+			outline.FillColor = PRIMED
+			outline.FillTransparency = if rock.IsPrimed then PRIMED_FILL else 1
 		end
 	end
-	for id, model in self._models do
+	for id, drawn in self._drawn do
 		if not seen[id] then
-			model:Destroy()
-			self._models[id] = nil
+			drawn.model:Destroy()
+			self._drawn[id] = nil
 		end
 	end
 end
 
 function RockView.Destroy(self: RockView)
-	for _, model in self._models do
-		model:Destroy()
+	for _, drawn in self._drawn do
+		drawn.model:Destroy()
 	end
-	table.clear(self._models)
+	table.clear(self._drawn)
 end
 
 return RockView

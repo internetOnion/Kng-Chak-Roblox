@@ -58,6 +58,7 @@ Anything whose colour changes in play is one model whose part colours are set fr
 - **Studio parts first:** Ball, Cylinder, Block and Wedge parts in SmoothPlastic, and a sphere mesh on a block for stretched shapes (capsules, ellipsoids). Most of the game, including the ship, rocks and planet, can be built this way.
 - **Meshes only when parts can't do it** (the Inferno boss, a detailed ship skin). Make them in Blender, keep them low-poly with flat colours, and upload them as MeshParts. Every upload goes through Roblox moderation, so upload ahead of need.
 - Each model lives in the assets folder and is looked up by name, so swapping greybox for final art changes only assets, never code.
+- **How the views read a model:** build it around the origin with its front along −Z; the view resets the model's pivot to the origin before placing it. Rocks are built at radius 1 (the view scales them to their type's radius) and live at `Assets/Rocks/<type id>` (`Rock`, `Comet`, `Iron`, `Cluster`, `Shard`, `Gold`); parts named `Body…` are painted with the type's tint. The planet is built at radius 10. Each model carries a `Highlight` named `Outline` (black; the rock view turns it pink while primed). The ship's `Spear`, `SpearTip` and `Flame` parts are driven by the ship view.
 - **Names:** `kc_<group>_<name>_<variant>`, e.g. `kc_rock_iron_a`, `kc_ship_nose_hard`, `kc_planet_ember`.
 - Keep part counts low: a rock about 5–10 parts, the ship about 15, the planet about 15. Up to 7 rocks are in flight at once on a phone.
 

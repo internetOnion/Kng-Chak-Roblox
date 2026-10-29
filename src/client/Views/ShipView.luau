@@ -6,7 +6,7 @@
 	    ship:Update(run:Snapshot().Ship) -- every frame, after the Run steps
 
 	The model is a clone of ReplicatedStorage.Assets.Ship.Ship, built nose along
-	-Z around the origin. Its Spear part shows while the spear is out; its Flame
+	-Z around the origin. Its Spear and SpearTip show while the spear is out; its Flame
 	part stretches behind the engine as far as the flame's push reach and takes the
 	state's colour.
 ]]
@@ -33,6 +33,7 @@ export type ShipView = typeof(setmetatable(
 	{} :: {
 		_model: Model,
 		_spear: BasePart?,
+		_spearTip: BasePart?,
 		_flame: BasePart?,
 	},
 	ShipView
@@ -41,10 +42,12 @@ export type ShipView = typeof(setmetatable(
 function ShipView.new(parent: Instance): ShipView
 	local prefab = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Ship"):WaitForChild("Ship") :: Model
 	local model = prefab:Clone()
+	model.WorldPivot = CFrame.identity -- assets are built around the origin; Studio may have picked another pivot
 	model.Parent = parent
 	return setmetatable({
 		_model = model,
 		_spear = model:FindFirstChild("Spear") :: BasePart?,
+		_spearTip = model:FindFirstChild("SpearTip") :: BasePart?,
 		_flame = model:FindFirstChild("Flame") :: BasePart?,
 	}, ShipView)
 end
@@ -53,9 +56,11 @@ function ShipView.Update(self: ShipView, ship: Ship.Ship)
 	local pivot = ArenaSpace.CFrameAt(ship.Position, ship.Facing, LIFT)
 	self._model:PivotTo(pivot)
 
-	local spear = self._spear
-	if spear then
-		spear.Transparency = if ship.IsSpearOut then 0 else 1
+	local spearTransparency = if ship.IsSpearOut then 0 else 1
+	for _, part in { self._spear, self._spearTip } do
+		if part then
+			part.Transparency = spearTransparency
+		end
 	end
 
 	local flame = self._flame

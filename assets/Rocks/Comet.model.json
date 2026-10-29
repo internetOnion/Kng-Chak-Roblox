@@ -1,0 +1,125 @@
+{
+  "className": "Model",
+  "children": [
+    {
+      "name": "Body",
+      "className": "Part",
+      "properties": {
+        "Size": [
+          2,
+          2,
+          2
+        ],
+        "Position": [
+          0,
+          0,
+          0
+        ],
+        "Color": [
+          0.7882,
+          0.9686,
+          1.0
+        ],
+        "Material": "SmoothPlastic",
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Tail",
+      "className": "Part",
+      "properties": {
+        "Size": [
+          3.2,
+          1.3,
+          1.3
+        ],
+        "Position": [
+          0,
+          0,
+          2.1
+        ],
+        "Color": [
+          0.498,
+          0.902,
+          1.0
+        ],
+        "Material": "Neon",
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Shape": "Cylinder",
+        "Orientation": [
+          0,
+          90,
+          0
+        ],
+        "Transparency": 0.25,
+        "CastShadow": false
+      }
+    },
+    {
+      "name": "TailTip",
+      "className": "Part",
+      "properties": {
+        "Size": [
+          1.8,
+          0.7,
+          0.7
+        ],
+        "Position": [
+          0,
+          0,
+          4.1
+        ],
+        "Color": [
+          0.498,
+          0.902,
+          1.0
+        ],
+        "Material": "Neon",
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Shape": "Cylinder",
+        "Orientation": [
+          0,
+          90,
+          0
+        ],
+        "Transparency": 0.45,
+        "CastShadow": false
+      }
+    },
+    {
+      "name": "Outline",
+      "className": "Highlight",
+      "properties": {
+        "OutlineColor": [
+          0,
+          0,
+          0
+        ],
+        "OutlineTransparency": 0,
+        "FillColor": [
+          1.0,
+          0.3098,
+          0.8471
+        ],
+        "FillTransparency": 1,
+        "DepthMode": "Occluded"
+      }
+    }
+  ]
+}
