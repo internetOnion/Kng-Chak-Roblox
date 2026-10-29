@@ -15,8 +15,8 @@ local ArenaConfig = require("../Data/ArenaConfig")
 local ShipConfig = require("../Data/ShipConfig")
 
 export type Tuning = {
-	Arena: typeof(ArenaConfig),
-	Ship: typeof(ShipConfig),
+	Arena: ArenaConfig.ArenaConfig,
+	Ship: ShipConfig.ShipConfig,
 }
 
 -- Section name -> key -> value, e.g. { Ship = { MaxSpeed = 30 } }.
