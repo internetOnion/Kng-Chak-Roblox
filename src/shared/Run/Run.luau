@@ -42,6 +42,9 @@ export type RockSetup = {
 
 export type WavePlan = WaveDirector.WavePlan
 
+-- Playing a wave, between waves, or over (planet HP reached 0).
+export type Phase = WaveDirector.Phase | "Over"
+
 export type Setup = {
 	Seed: number?, -- seeds every random choice the run makes (default 1)
 	Waves: { WavePlan }?, -- fixed waves instead of the wave data's; {} plays none
@@ -54,7 +57,7 @@ export type Setup = {
 -- What other code may read. Rebuilt on every Snapshot() call; changing it changes nothing.
 export type Snapshot = {
 	Wave: number, -- 0 before the first wave starts
-	Phase: WaveDirector.Phase,
+	Phase: Phase,
 	Score: number,
 	PlanetHp: number,
 	PlanetMaxHp: number,
@@ -78,6 +81,7 @@ export type Run = typeof(setmetatable(
 		_nextRockId: number,
 		_director: WaveDirector.WaveDirector,
 		_score: number,
+		_over: boolean,
 		_pending: number, -- frame time not simulated yet, less than one sub-step
 		_boostQueued: boolean, -- a boost press waiting for the next sub-step
 	},
@@ -98,6 +102,10 @@ local function stepRocks(self: Run, dt: number)
 			local damage = rock.Type.DamagePercent
 			self.Events.PlanetHit:Fire(Rock.Snapshot(rock), damage)
 			self._planet:TakeDamage(damage)
+			if self._planet:IsDepleted() and not self._over then
+				self._over = true
+				self.Events.GameOver:Fire(self._director.Wave)
+			end
 		else
 			table.insert(survivors, rock)
 		end
@@ -110,6 +118,9 @@ local function tick(self: Run, input: Input, dt: number)
 	self._boostQueued = false
 	Flight.Step(self._ship, self._tuning, input, boostPressed, dt)
 	stepRocks(self, dt)
+	if self._over then
+		return
+	end
 	local combat = Combat.Step(self._ship, self._rocks, self._tuning, self.Events)
 	self._rocks = combat.survivors
 	self._score += combat.score
@@ -139,6 +150,7 @@ function Run.new(setup: Setup?): Run
 		_nextRockId = 1,
 		_director = WaveDirector.new(Rng.new(setup and setup.Seed or 1), setup and setup.Waves),
 		_score = 0,
+		_over = false,
 		_pending = 0,
 		_boostQueued = false,
 	}, Run)
@@ -151,14 +163,17 @@ function Run.new(setup: Setup?): Run
 	return self
 end
 
--- Advances the run by dt seconds of play, with this frame's input.
+-- Advances the run by dt seconds of play, with this frame's input. Once the run is over, does nothing.
 function Run.Step(self: Run, input: Input, dt: number)
+	if self._over then
+		return
+	end
 	if input.BoostPressed then
 		-- kept until a sub-step takes it, so a press on a short frame isn't lost
 		self._boostQueued = true
 	end
 	self._pending += math.clamp(dt, 0, MAX_FRAME)
-	while self._pending >= STEP - EPSILON do
+	while self._pending >= STEP - EPSILON and not self._over do
 		self._pending = math.max(0, self._pending - STEP)
 		tick(self, input, STEP)
 	end
@@ -171,7 +186,7 @@ function Run.Snapshot(self: Run): Snapshot
 	end
 	return table.freeze({
 		Wave = self._director.Wave,
-		Phase = self._director.Phase,
+		Phase = (if self._over then "Over" else self._director.Phase) :: Phase,
 		Score = self._score,
 		PlanetHp = self._planet.Hp,
 		PlanetMaxHp = self._planet.MaxHp,
