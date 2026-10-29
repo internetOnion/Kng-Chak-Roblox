@@ -12,6 +12,7 @@ local InfernoConfig = {
 	BodyRadius = 5, -- the burning meteor; it touches the planet when its centre is this far above the surface
 	EnterDistance = 58, -- enters this far from the planet's centre (just inside the arena edge), and bounces back here
 	Spin = 0.25, -- radians per second the plates turn round the body
+	BodyTint = Color3.fromHex("#7a2a1a"), -- the boss view paints the model's Body parts with it
 
 	-- Phase 1: armour
 	Plates = 6,

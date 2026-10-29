@@ -28,3 +28,7 @@ Shared game code (`src/shared`) has to load both in Roblox and in Lune, so:
 
 - `Bot.luau` is recorded by `lune run record-replay` (a small bot flies at rocks). Re-record it after a change that's meant to change how runs play out.
 - To capture a real playtest, press **F7** in a Studio playtest: the run's recording is printed to Output as a Luau module. Save it under `tests/Replays/` to replay a bug exactly.
+
+## Pilot and the balance report
+
+`tests/Pilot.luau` is a scripted player: it reads only the snapshot and gives only flight input (push, break, orbit, slingshot). Tests use it to play whole fights, and `lune run balance` uses it to play full emergency calls on fixed seeds and print a per-wave report of HP lost and time. CI posts that report on every PR that touches the shared code (the Balance report check's summary); it never fails the build.

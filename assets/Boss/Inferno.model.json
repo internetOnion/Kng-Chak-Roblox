@@ -1,0 +1,309 @@
+{
+  "className": "Model",
+  "children": [
+    {
+      "name": "Body",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          2,
+          2,
+          2
+        ],
+        "Position": [
+          0,
+          0,
+          0
+        ],
+        "Color": [
+          0.4784,
+          0.1647,
+          0.102
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      },
+      "children": [
+        {
+          "name": "Fire",
+          "className": "Fire",
+          "properties": {
+            "Size": 6,
+            "Heat": 9,
+            "Color": [
+              1.0,
+              0.4157,
+              0.1216
+            ],
+            "SecondaryColor": [
+              1.0,
+              0.8784,
+              0.4
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "BodyLump1",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.7,
+          0.7,
+          0.7
+        ],
+        "Position": [
+          0.55,
+          0.45,
+          0.3
+        ],
+        "Color": [
+          0.4784,
+          0.1647,
+          0.102
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "BodyLump2",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.65,
+          0.65,
+          0.65
+        ],
+        "Position": [
+          -0.5,
+          0.5,
+          0.35
+        ],
+        "Color": [
+          0.4784,
+          0.1647,
+          0.102
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "BodyLump3",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.6,
+          0.6,
+          0.6
+        ],
+        "Position": [
+          0.1,
+          0.6,
+          0.65
+        ],
+        "Color": [
+          0.4784,
+          0.1647,
+          0.102
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "BodyLump4",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.55,
+          0.55,
+          0.55
+        ],
+        "Position": [
+          -0.15,
+          0.55,
+          -0.55
+        ],
+        "Color": [
+          0.4784,
+          0.1647,
+          0.102
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Flame1",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.9,
+          1.1700000000000002,
+          0.9
+        ],
+        "Position": [
+          0.0,
+          0.85,
+          0.55
+        ],
+        "Color": [
+          1.0,
+          0.6039,
+          0.1216
+        ],
+        "Material": "Neon",
+        "Shape": "Ball",
+        "Transparency": 0.15
+      }
+    },
+    {
+      "name": "Flame2",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.6,
+          0.78,
+          0.6
+        ],
+        "Position": [
+          0.45,
+          0.85,
+          0.2
+        ],
+        "Color": [
+          1.0,
+          0.6039,
+          0.1216
+        ],
+        "Material": "Neon",
+        "Shape": "Ball",
+        "Transparency": 0.15
+      }
+    },
+    {
+      "name": "Flame3",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.65,
+          0.8450000000000001,
+          0.65
+        ],
+        "Position": [
+          -0.45,
+          0.85,
+          0.25
+        ],
+        "Color": [
+          1.0,
+          0.6039,
+          0.1216
+        ],
+        "Material": "Neon",
+        "Shape": "Ball",
+        "Transparency": 0.15
+      }
+    },
+    {
+      "name": "Flame4",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.5,
+          0.65,
+          0.5
+        ],
+        "Position": [
+          0.15,
+          0.85,
+          -0.3
+        ],
+        "Color": [
+          1.0,
+          0.6039,
+          0.1216
+        ],
+        "Material": "Neon",
+        "Shape": "Ball",
+        "Transparency": 0.15
+      }
+    },
+    {
+      "name": "Outline",
+      "className": "Highlight",
+      "properties": {
+        "OutlineColor": [
+          0,
+          0,
+          0
+        ],
+        "OutlineTransparency": 0,
+        "FillColor": [
+          1.0,
+          0.3098,
+          0.8471
+        ],
+        "FillTransparency": 1,
+        "DepthMode": "Occluded"
+      }
+    }
+  ]
+}

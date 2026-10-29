@@ -92,6 +92,8 @@ function SoundPlayer.Listen(self: SoundPlayer, events: RunEvents.RunEvents)
 	on(events.RockClanged, "Clang")
 	on(events.ShipBumped, "Bump")
 	on(events.PlanetHit, "Impact")
+	on(events.BossHit, "Impact")
+	on(events.CoreCracked, "Clang")
 end
 
 -- The fields the hum reads. A Run snapshot's Ship has them all.
