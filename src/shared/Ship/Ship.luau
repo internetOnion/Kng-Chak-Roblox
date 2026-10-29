@@ -13,6 +13,7 @@
 	    ship.IsSpearOut  boolean  the nose is a spear (the only state that breaks rocks)
 	    ship.Fuel        number   0..ShipConfig.FuelMax
 	    ship.IsStunned   boolean  after a bad bump: no control, grey flame
+	    ship.FlameReach  number   how far the flame (the push zone) reaches from the ship's centre
 ]]
 
 export type Ship = {
@@ -26,6 +27,7 @@ export type Ship = {
 	IsSpearOut: boolean,
 	IsStunned: boolean,
 	Fuel: number,
+	FlameReach: number,
 	BoostTime: number, -- seconds of boost left
 	ExitTime: number, -- seconds left of the boost's exit (sharper turning and grip)
 	StunTime: number, -- seconds of stun left
@@ -48,6 +50,7 @@ function Ship.new(position: Vector2, fuel: number, heading: number?): Ship
 		IsSpearOut = false,
 		IsStunned = false,
 		Fuel = fuel,
+		FlameReach = 0,
 		BoostTime = 0,
 		ExitTime = 0,
 		StunTime = 0,

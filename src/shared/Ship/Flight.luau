@@ -183,6 +183,20 @@ function Flight.Step(
 	ship.IsBoosting = ship.BoostTime > 0
 	ship.IsSpearOut = ship.IsBoosting
 	ship.IsStunned = ship.StunTime > 0
+
+	-- The flame is the push zone: throttle sets its reach and a boost flares it.
+	local reach = 0
+	if ship.IsStunned then
+		reach = 0
+	elseif ship.IsBoosting then
+		reach = config.PushBoostRange
+	elseif thrust then
+		reach = config.PushRangeMin + (config.PushRange - config.PushRangeMin) * throttle
+	end
+	ship.FlameReach += (reach - ship.FlameReach) * math.min(1, 14 * dt)
+	if ship.FlameReach < 0.05 then
+		ship.FlameReach = 0
+	end
 end
 
 return table.freeze(Flight)
