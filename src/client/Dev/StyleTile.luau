@@ -63,13 +63,14 @@ function StyleTile.new(): StyleTile
 	Stage.Sky(folder, CENTRE, SKY_HALF)
 	PlanetView.new(folder, CENTRE)
 	-- the ship is far from the edge, so only the orbit band shows
-	RingsView.new(folder, CENTRE):Update(CENTRE, ArenaConfig)
+	RingsView.new(folder, CENTRE):Update({ Position = CENTRE, IsCaptured = false }, ArenaConfig)
 
 	ShipView.new(folder):Update({
 		Position = CENTRE + CRUISE.at,
 		Facing = CRUISE.facing,
 		IsSpearOut = false,
 		IsBoosting = false,
+		IsSlingshotting = false,
 		IsStunned = false,
 		FlameReach = ShipConfig.PushRangeMin + (ShipConfig.PushRange - ShipConfig.PushRangeMin) * 0.6,
 	})
@@ -78,6 +79,7 @@ function StyleTile.new(): StyleTile
 		Facing = BOOST.facing,
 		IsSpearOut = true,
 		IsBoosting = true,
+		IsSlingshotting = false,
 		IsStunned = false,
 		FlameReach = ShipConfig.PushBoostRange,
 	})

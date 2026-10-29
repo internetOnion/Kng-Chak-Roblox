@@ -8,10 +8,13 @@
 	while fuel lasts. The ship slides along the arena edge, so it can't leave the
 	arena. Flying into the orbit band locks it onto the orbit (see Ship/Orbit), so
 	it can't hit the planet either; there, fuel refills OrbitRegenMult times faster.
+	Leaving the orbit can launch a slingshot dive, which flies like a boost at
+	slingshot speed and homes on the rock it locked onto.
 ]]
 
 local Context = require("../Run/Context")
 local Orbit = require("./Orbit")
+local Rock = require("../Rocks/Rock")
 local RunInput = require("../Run/RunInput")
 local Ship = require("./Ship")
 local Tuning = require("../Run/Tuning")
@@ -47,6 +50,43 @@ local function tryBoost(ship: Ship.Ship, tuning: Tuning.Tuning, want: number?): 
 	return true
 end
 
+--[[
+	Leaves the orbit toward `want`. Before capture it's free and launches a slingshot
+	(unless one was launched too recently). Once captured, only a boost gets out,
+	and it costs the boost's fuel. Returns whether the ship left.
+]]
+local function leaveOrbit(ship: Ship.Ship, ctx: Context.Context, want: number?, viaBoost: boolean): boolean
+	local angle = Orbit.ExitAngle(ship, want)
+	if not ship.IsCaptured then
+		Orbit.Leave(ship, ctx, angle)
+		if ship.SlingshotCooldown <= 0 then
+			Orbit.Slingshot(ship, ctx)
+		end
+		return true
+	end
+	local config = ctx.tuning.Ship
+	if not viaBoost or ship.StunTime > 0 or ship.Fuel < config.BoostCost then
+		return false
+	end
+	Orbit.Leave(ship, ctx, angle)
+	tryBoost(ship, ctx.tuning, angle)
+	return true
+end
+
+-- The rock the slingshot is locked onto, if it's still in the arena.
+local function lockedRock(ship: Ship.Ship, ctx: Context.Context): Rock.Rock?
+	local id = ship.LockId
+	if not id then
+		return nil
+	end
+	for _, rock in ctx.rocks do
+		if rock.Id == id then
+			return rock
+		end
+	end
+	return nil
+end
+
 -- Free flight (out of orbit) for dt. Returns whether the engine thrusts.
 local function fly(
 	ship: Ship.Ship,
@@ -62,16 +102,28 @@ local function fly(
 	local arena = tuning.Arena
 
 	-- Turn the nose
+	local slinging = ship.SlingshotTime > 0
 	local rate = config.TurnRate
 	if ship.BoostTime > 0 then
 		rate = config.BoostTurnRate
-	elseif ship.ExitTime > 0 then
+	elseif slinging or ship.ExitTime > 0 then
 		rate = math.max(rate, config.BoostTurnRate)
 	end
-	if want then
+	local locked = if slinging then lockedRock(ship, ctx) else nil
+	local lockAngle = 0
+	if locked then
+		local offset = locked.Position - ship.Position
+		lockAngle = math.atan2(offset.Y, offset.X)
+	end
+	if locked and (not want or math.abs(wrapAngle(want - lockAngle)) < math.pi / 3) then
+		-- a locked slingshot homes on its rock
+		local da = wrapAngle(lockAngle - ship.Heading)
+		ship.Heading += math.clamp(da, -rate * dt, rate * dt)
+	elseif want then
+		ship.LockId = nil -- steering well away cancels the lock
 		local da = wrapAngle(want - ship.Heading)
 		ship.Heading += math.clamp(da, -rate * dt, rate * dt)
-	elseif ship.BoostTime <= 0 and ship.Velocity.Magnitude > 2 then
+	elseif ship.BoostTime <= 0 and not slinging and ship.Velocity.Magnitude > 2 then
 		-- coasting: the nose follows the motion
 		local motion = math.atan2(ship.Velocity.Y, ship.Velocity.X)
 		ship.Heading += wrapAngle(motion - ship.Heading) * math.min(1, 4 * dt)
@@ -96,6 +148,14 @@ local function fly(
 		ship.BoostTime -= dt
 		if ship.BoostTime <= 0 then
 			ship.BoostTime = 0
+			v = withLength(v, config.MaxSpeed * config.BoostCarry)
+			ship.ExitTime = config.BoostExitTime
+		end
+	elseif slinging then
+		v = facing * config.SlingshotSpeed
+		ship.SlingshotTime -= dt
+		if ship.SlingshotTime <= 0 then
+			ship.SlingshotTime = 0
 			v = withLength(v, config.MaxSpeed * config.BoostCarry)
 			ship.ExitTime = config.BoostExitTime
 		end
@@ -189,23 +249,18 @@ function Flight.Step(ship: Ship.Ship, ctx: Context.Context, input: RunInput.RunI
 
 	if boostPressed then
 		if ship.IsInOrbit then
-			-- a boost in orbit leaves it, toward where you aim
-			local angle = Orbit.ExitAngle(ship, want)
-			if ship.StunTime <= 0 and ship.Fuel >= config.BoostCost then
-				Orbit.Leave(ship, ctx, angle)
-				tryBoost(ship, tuning, angle)
-			end
+			leaveOrbit(ship, ctx, want, true)
 		else
 			tryBoost(ship, tuning, want)
 		end
 	end
 	if ship.IsInOrbit and want and Orbit.AimsOut(ship, tuning, want) then
-		Orbit.Leave(ship, ctx, Orbit.ExitAngle(ship, want))
+		leaveOrbit(ship, ctx, want, false)
 	end
 
 	local thrust
 	if ship.IsInOrbit then
-		Orbit.Step(ship, tuning, want, dt)
+		Orbit.Step(ship, ctx, want, dt)
 		thrust = true
 		throttle = ORBIT_THROTTLE
 	else
@@ -223,18 +278,23 @@ function Flight.Step(ship: Ship.Ship, ctx: Context.Context, input: RunInput.RunI
 	ship.StunTime = math.max(0, ship.StunTime - dt)
 	ship.InvulnerableTime = math.max(0, ship.InvulnerableTime - dt)
 	ship.OrbitRelock = math.max(0, ship.OrbitRelock - dt)
+	ship.SlingshotCooldown = math.max(0, ship.SlingshotCooldown - dt)
 
 	ship.IsThrusting = thrust
 	ship.Throttle = if thrust then throttle else 0
 	ship.IsBoosting = ship.BoostTime > 0
-	ship.IsSpearOut = ship.IsBoosting
+	ship.IsSlingshotting = ship.SlingshotTime > 0
+	ship.IsSpearOut = ship.IsBoosting or ship.IsSlingshotting
 	ship.IsStunned = ship.StunTime > 0
+	if not ship.IsSlingshotting then
+		ship.LockId = nil
+	end
 
 	-- The flame is the push zone: throttle sets its reach and a boost flares it.
 	local reach = 0
 	if ship.IsStunned then
 		reach = 0
-	elseif ship.IsBoosting then
+	elseif ship.IsSpearOut then
 		reach = config.PushBoostRange
 	elseif thrust then
 		reach = config.PushRangeMin + (config.PushRange - config.PushRangeMin) * ship.Throttle

@@ -54,10 +54,13 @@ local function bump(
 	local config = tuning.Ship
 	local knock = -toRock * config.BumpKnock
 	ship.Velocity = knock
+	ship.OrbitSpeed *= 0.5 -- in orbit, a bump costs half the orbit speed instead
 	ship.StunTime = config.StunTime
 	ship.InvulnerableTime = config.StunTime + 0.4
 	ship.BoostTime = 0
+	ship.SlingshotTime = 0
 	ship.IsBoosting = false
+	ship.IsSlingshotting = false
 	ship.IsSpearOut = false
 	ship.IsStunned = true
 	rock.Velocity += toRock * 3
@@ -91,7 +94,7 @@ function Combat.Step(ship: Ship.Ship, rocks: { Rock.Rock }, tuning: Tuning.Tunin
 			local front = touchesSpear or distance < 1e-3 or along / distance >= cosBreak
 			if hard and front then
 				score += rock.Type.Score
-				events.RockBroken:Fire(Rock.Snapshot(rock), "Ram")
+				events.RockBroken:Fire(Rock.Snapshot(rock), if ship.IsSlingshotting then "Dive" else "Ram")
 				continue
 			elseif ship.InvulnerableTime <= 0 then
 				bump(ship, rock, toRock, tuning, events)

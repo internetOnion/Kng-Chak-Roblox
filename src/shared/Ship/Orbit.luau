@@ -8,9 +8,15 @@
 	against it slows it down (past zero it turns round). Aiming outward, at least
 	OrbitExitDot away from the planet, leaves the orbit. Flight calls into this
 	module; the Run never does.
+
+	Leaving within CaptureTime of locking on launches a free slingshot dive: the
+	ship flies out at slingshot speed with the spear out, locked onto the rock
+	ahead if there is one. After CaptureTime the ship is captured: aiming out no
+	longer leaves, and only a boost (which costs fuel) gets it out.
 ]]
 
 local Context = require("../Run/Context")
+local Rock = require("../Rocks/Rock")
 local Ship = require("./Ship")
 local Tuning = require("../Run/Tuning")
 
@@ -43,8 +49,11 @@ function Orbit.Enter(ship: Ship.Ship, ctx: Context.Context)
 	ship.OrbitSpeed = math.clamp(math.abs(ship.Velocity:Dot(along)), config.OrbitEntryMin, config.OrbitMaxSpeed)
 	ship.Velocity = along * ship.OrbitSpeed
 	ship.IsInOrbit = true
+	ship.IsCaptured = false
 	ship.OrbitTime = 0
 	ship.BoostTime = 0
+	ship.SlingshotTime = 0
+	ship.LockId = nil
 	ctx.events.OrbitLocked:Fire()
 end
 
@@ -52,6 +61,7 @@ end
 function Orbit.Leave(ship: Ship.Ship, ctx: Context.Context, angle: number)
 	local config = ctx.tuning.Ship
 	ship.IsInOrbit = false
+	ship.IsCaptured = false
 	ship.OrbitRelock = config.OrbitRelockTime
 	ship.ExitTime = config.BoostExitTime
 	ship.Heading = angle
@@ -75,8 +85,49 @@ function Orbit.AimsOut(ship: Ship.Ship, tuning: Tuning.Tuning, want: number): bo
 	return Vector2.new(math.cos(want), math.sin(want)):Dot(outward) > tuning.Ship.OrbitExitDot
 end
 
+-- The rock a slingshot launched along `heading` locks onto: the nearest one ahead, favouring straight ahead.
+local function lockTarget(ship: Ship.Ship, ctx: Context.Context, heading: number): Rock.Rock?
+	local config = ctx.tuning.Ship
+	local facing = Vector2.new(math.cos(heading), math.sin(heading))
+	local cosCone = math.cos(math.rad(config.LockConeDeg))
+	local best, bestScore = nil, math.huge
+	for _, rock in ctx.rocks do
+		local offset = rock.Position - ship.Position
+		local distance = offset.Magnitude
+		if distance >= 0.5 and distance <= config.LockRange then
+			local ahead = offset:Dot(facing) / distance
+			local score = distance * (2 - ahead)
+			if ahead >= cosCone and score < bestScore then
+				best, bestScore = rock, score
+			end
+		end
+	end
+	return best
+end
+
+-- Launches a slingshot dive along the ship's heading, locking onto the rock ahead if there is one.
+function Orbit.Slingshot(ship: Ship.Ship, ctx: Context.Context)
+	local config = ctx.tuning.Ship
+	ship.SlingshotCooldown = config.SlingshotCooldown
+	local target = lockTarget(ship, ctx, ship.Heading)
+	if target then
+		local offset = target.Position - ship.Position
+		ship.Heading = math.atan2(offset.Y, offset.X)
+		ship.LockId = target.Id
+		-- stop just past the locked rock rather than flinging across the arena
+		ship.SlingshotTime = math.clamp(offset.Magnitude / config.SlingshotSpeed + 0.12, 0.15, config.SlingshotDuration)
+	else
+		ship.LockId = nil
+		ship.SlingshotTime = config.SlingshotNoTarget
+	end
+	ship.IsSlingshotting = true
+	ship.Velocity = Vector2.new(math.cos(ship.Heading), math.sin(ship.Heading)) * config.SlingshotSpeed
+	ctx.events.Slingshot:Fire(if target then Rock.Snapshot(target) else nil)
+end
+
 -- Moves the ship along the orbit for dt, steered toward `want` (radians) if set.
-function Orbit.Step(ship: Ship.Ship, tuning: Tuning.Tuning, want: number?, dt: number)
+function Orbit.Step(ship: Ship.Ship, ctx: Context.Context, want: number?, dt: number)
+	local tuning = ctx.tuning
 	local config = tuning.Ship
 	local arena = tuning.Arena
 	local radius = ship.Position.Magnitude
@@ -100,6 +151,10 @@ function Orbit.Step(ship: Ship.Ship, tuning: Tuning.Tuning, want: number?, dt: n
 	local heading = math.atan2(along.Y, along.X)
 	ship.Heading = wrapAngle(ship.Heading + wrapAngle(heading - ship.Heading) * math.min(1, 10 * dt))
 	ship.OrbitTime += dt
+	if not ship.IsCaptured and ship.OrbitTime >= config.CaptureTime then
+		ship.IsCaptured = true
+		ctx.events.OrbitCaptured:Fire()
+	end
 end
 
 return table.freeze(Orbit)

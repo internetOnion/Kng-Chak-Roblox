@@ -15,7 +15,7 @@ local Signal = require("../Util/Signal")
 
 export type RunEvents = {
 	-- (rock: Rock, cause: string)
-	-- The player destroyed a rock. cause says how, e.g. "Ram".
+	-- The player destroyed a rock. cause says how: "Ram" (boosted spear) or "Dive" (slingshot).
 	RockBroken: Signal.Signal,
 
 	-- (rock: Rock)
@@ -37,6 +37,14 @@ export type RunEvents = {
 	-- ()
 	-- The ship left the orbit.
 	OrbitLeft: Signal.Signal,
+
+	-- ()
+	-- The ship stayed in orbit past the capture time: from now on, leaving costs a boost.
+	OrbitCaptured: Signal.Signal,
+
+	-- (target: Rock?)
+	-- The ship launched a slingshot dive out of orbit, locked onto target (nil when nothing was ahead).
+	Slingshot: Signal.Signal,
 
 	-- (wave: number)
 	-- A wave began.
@@ -61,6 +69,8 @@ RunEvents.Names = table.freeze({
 	"ShipBumped",
 	"OrbitLocked",
 	"OrbitLeft",
+	"OrbitCaptured",
+	"Slingshot",
 	"WaveStarted",
 	"WaveCleared",
 	"GameOver",

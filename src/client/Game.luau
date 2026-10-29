@@ -227,7 +227,7 @@ return function()
 		else
 			camera:Update(snapshot.Ship.Position, arena, dt)
 		end
-		session.rings:Update(snapshot.Ship.Position, arena)
+		session.rings:Update(snapshot.Ship, arena)
 		session.ship:Update(snapshot.Ship)
 		session.rocks:Update(snapshot.Rocks)
 		hud:Update(snapshot)
