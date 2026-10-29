@@ -2,10 +2,9 @@
 --[[
 	Game: starts a Run on this client and draws it.
 
-	Each frame the Run steps with the player's input, then the views read its
-	snapshot. GameEvents follows the Run, so anything listening there hears it.
-
-	First slice: a few rocks drop onto the planet. Input is idle until flight lands.
+	Each frame the input adapter turns the player's controls into the Run's input,
+	the Run steps, then the views read its snapshot. GameEvents follows the Run,
+	so anything listening there hears it.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -17,8 +16,10 @@ local RockTypes = require(KngChak.Data.RockTypes)
 local Run = require(KngChak.Run.Run)
 
 local CameraView = require(script.Parent.Views.CameraView)
+local MouseInput = require(script.Parent.Input.MouseInput)
 local PlanetView = require(script.Parent.Views.PlanetView)
 local RockView = require(script.Parent.Views.RockView)
+local ShipView = require(script.Parent.Views.ShipView)
 
 -- Until the spawner lands: rocks of a few types, arriving one after another.
 local START_ROCKS: { Run.RockSetup } = {
@@ -37,11 +38,15 @@ return function()
 
 	PlanetView.new(folder)
 	local rocks = RockView.new(folder)
+	local ship = ShipView.new(folder)
+	local mouse = MouseInput.new()
 	CameraView.LookAt(Vector2.zero)
 
+	local snapshot = run:Snapshot()
 	RunService.RenderStepped:Connect(function(dt: number)
-		run:Step(Run.IdleInput, dt)
-		local snapshot = run:Snapshot()
+		run:Step(mouse:Read(snapshot.Ship.Position), dt)
+		snapshot = run:Snapshot()
+		ship:Update(snapshot.Ship)
 		rocks:Update(snapshot.Rocks)
 	end)
 end
