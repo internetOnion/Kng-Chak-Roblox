@@ -24,7 +24,7 @@ local ArenaConfig = {
 	ShipStart = Vector2.new(0, -24), -- where the ship starts each run
 
 	-- Camera
-	CamView = 50, -- world units from screen centre to the nearer screen edge (50 vs ~35: decide on a phone)
+	CamView = 50, -- world units from screen centre to the nearer screen edge (chosen over ~35 on a phone, #18)
 	CamNear = 15, -- ship closer than this to the planet's centre: camera stays on the planet
 	CamFar = 30, -- ship farther than this: camera centres on the ship
 	CamPlanetShow = 0.35, -- at least this fraction of the planet's width stays on screen
