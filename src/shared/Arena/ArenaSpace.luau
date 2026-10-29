@@ -26,6 +26,20 @@ function ArenaSpace.ToArena(world: Vector3): Vector2
 	return Vector2.new(world.X, -world.Z)
 end
 
+-- Arena position where a ray (say, from the camera through a screen point) meets the
+-- plane raised by `lift`, or nil if it runs parallel to the plane or away from it.
+function ArenaSpace.RayHit(origin: Vector3, direction: Vector3, lift: number?): Vector2?
+	local height = ArenaConfig.PlaneHeight + (lift or 0)
+	if math.abs(direction.Y) < 1e-6 then
+		return nil
+	end
+	local t = (height - origin.Y) / direction.Y
+	if t < 0 then
+		return nil
+	end
+	return ArenaSpace.ToArena(origin + direction * t)
+end
+
 -- World CFrame at an arena position, facing along an arena direction (default: up the screen).
 function ArenaSpace.CFrameAt(position: Vector2, facing: Vector2?, lift: number?): CFrame
 	local origin = ArenaSpace.ToWorld(position, lift)
