@@ -11,7 +11,7 @@ The look was picked from three prototype style tiles. Screenshots and code are o
 - **Glow still means "this matters".** Only energy uses the Neon material: the flame, the orbit band, the comet tail, primed rocks, stars, PERFECT and combo callouts. Rocks, the hull and the planet never glow on their own.
 - **Shape before colour.** Every rock type must be recognisable by silhouette alone (colour-blind safe) at phone size.
 - **Light from above and slightly behind the camera,** with real shadows on, so the toys feel solid.
-- Fonts: Atomic Age for display and Jost for UI and numbers, if Roblox can load them (checked in #12). If not, Fredoka One (a Roblox built-in) fits the toy look for display.
+- Fonts: the brand fonts, Atomic Age (display) and Jost (UI and numbers), aren't among Roblox's font families (checked in Studio on 2026-10-29 for #12), so built-ins stand in: **Fredoka One** for display, which fits the toy look, and **Montserrat** (Medium and Bold) for UI and numbers, the closest geometric sans to Jost. Revisit before the M4 menus if Roblox adds a way to use them.
 
 ## Shape language
 | Object | Built from | Must read as |
