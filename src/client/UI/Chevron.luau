@@ -9,6 +9,11 @@
 	it gets a chevron, so there's never more than one. The chevron sits just inside
 	the edge, along the line from the screen's centre to the rock, pulses with the
 	threat ring and takes the rock's hint colour. It hides while the rock is on screen.
+
+	The edge spot is worked out in the camera's viewport, then turned back into a
+	point on the play plane, and the arrow is a BillboardGui pinned there. So it
+	lands where the camera's edge really is, even on phones whose safe area moves
+	a ScreenGui's origin away from the viewport's.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -19,6 +24,7 @@ local Run = require(KngChak.Run.Run)
 local ThreatView = require(script.Parent.Parent.Views.ThreatView)
 
 local INSET = 34 -- px from the screen's edge (clear of rounded corners and notches)
+local LIFT = 2 -- the plane height the arrow is pinned at, as the rocks
 local MARGIN = 12 -- px a rock can be past the edge and still count as on screen
 local SIZE = 28
 local PULSE = 6
@@ -28,7 +34,8 @@ Chevron.__index = Chevron
 
 export type Chevron = typeof(setmetatable(
 	{} :: {
-		_gui: ScreenGui,
+		_gui: BillboardGui,
+		_anchor: Attachment,
 		_arrow: Frame,
 		_bars: { Frame },
 	},
@@ -36,15 +43,22 @@ export type Chevron = typeof(setmetatable(
 ))
 
 function Chevron.new(parent: Instance): Chevron
-	local gui = Instance.new("ScreenGui")
+	local anchor = Instance.new("Attachment")
+	anchor.Name = "ChevronAnchor"
+	anchor.Parent = workspace.Terrain
+	local gui = Instance.new("BillboardGui")
 	gui.Name = "Chevron"
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true -- positions are viewport pixels, as the camera gives them
-	gui.ScreenInsets = Enum.ScreenInsets.None
+	gui.Adornee = anchor
+	gui.AlwaysOnTop = true
+	gui.LightInfluence = 0
+	gui.ClipsDescendants = false
+	gui.Size = UDim2.fromOffset(SIZE, SIZE)
 
 	local arrow = Instance.new("Frame")
 	arrow.Name = "Arrow"
 	arrow.AnchorPoint = Vector2.new(0.5, 0.5)
+	arrow.Position = UDim2.fromScale(0.5, 0.5)
 	arrow.Size = UDim2.fromOffset(SIZE, SIZE)
 	arrow.BackgroundTransparency = 1
 	arrow.Visible = false
@@ -75,7 +89,7 @@ function Chevron.new(parent: Instance): Chevron
 	end
 
 	gui.Parent = parent
-	return setmetatable({ _gui = gui, _arrow = arrow, _bars = bars }, Chevron)
+	return setmetatable({ _gui = gui, _anchor = anchor, _arrow = arrow, _bars = bars }, Chevron)
 end
 
 function Chevron.Update(self: Chevron, snapshot: Run.Snapshot, planetRadius: number, now: number)
@@ -91,7 +105,7 @@ function Chevron.Update(self: Chevron, snapshot: Run.Snapshot, planetRadius: num
 		return
 	end
 	local size = camera.ViewportSize
-	local point = camera:WorldToViewportPoint(ArenaSpace.ToWorld(threat.Position, 2))
+	local point = camera:WorldToViewportPoint(ArenaSpace.ToWorld(threat.Position, LIFT))
 	local x, y = point.X, point.Y
 	if point.Z > 0 and x > -MARGIN and x < size.X + MARGIN and y > -MARGIN and y < size.Y + MARGIN then
 		self._arrow.Visible = false
@@ -106,10 +120,16 @@ function Chevron.Update(self: Chevron, snapshot: Run.Snapshot, planetRadius: num
 	local reach = Vector2.new(math.max(1, centre.X - INSET), math.max(1, centre.Y - INSET))
 	local k = math.min(reach.X / math.max(1e-6, math.abs(offset.X)), reach.Y / math.max(1e-6, math.abs(offset.Y)))
 	local at = centre + offset * k
+	local ray = camera:ViewportPointToRay(at.X, at.Y)
+	local spot = ArenaSpace.RayHit(ray.Origin, ray.Direction, LIFT)
+	if not spot then
+		self._arrow.Visible = false
+		return
+	end
+	self._anchor.WorldPosition = ArenaSpace.ToWorld(spot, LIFT)
 
 	local pulse = 0.5 + 0.5 * math.sin(now * PULSE)
 	local color = ThreatView.ColorOf(threat, planetRadius)
-	self._arrow.Position = UDim2.fromOffset(at.X, at.Y)
 	self._arrow.Rotation = math.deg(math.atan2(offset.Y, offset.X))
 	self._arrow.Visible = true
 	for _, bar in self._bars do

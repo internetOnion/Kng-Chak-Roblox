@@ -6,12 +6,16 @@
 	    fuel:Listen(GameEvents)                                -- once, for refund flashes
 	    fuel:Update(snapshot, run:GetTuning().Ship, os.clock()) -- every frame, after the camera moves
 
-	It follows the ship on screen and fills left to right along the bottom of a
-	circle round it, one segment per boost (BoostCost of fuel). Lit dots are
+	It follows the ship and fills left to right along the bottom of a circle round
+	it, one segment per boost (BoostCost of fuel). Lit dots are
 	orange, cyan in orbit (where fuel refills fastest) and red when there isn't
 	enough for a boost. A fuel refund flashes it gold. It fades out when the tank
 	has been full a while and comes back as soon as fuel matters. It only reads
 	the snapshot and game events.
+
+	It's a BillboardGui pinned to the ship's world position, so Roblox draws it
+	where it draws the ship. Placing it in a ScreenGui from WorldToViewportPoint
+	put it off to one side on phones whose safe area moves the GUI's origin.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -48,7 +52,8 @@ FuelArc.__index = FuelArc
 
 export type FuelArc = typeof(setmetatable(
 	{} :: {
-		_gui: ScreenGui,
+		_gui: BillboardGui,
+		_anchor: Attachment, -- the ship's position; the gui is centred on it
 		_dots: { Dot },
 		_layout: string, -- the fuel max and boost cost the dots were laid out for
 		_flashUntil: number,
@@ -60,14 +65,20 @@ export type FuelArc = typeof(setmetatable(
 ))
 
 function FuelArc.new(parent: Instance): FuelArc
-	local gui = Instance.new("ScreenGui")
+	local anchor = Instance.new("Attachment")
+	anchor.Name = "FuelArcAnchor"
+	anchor.Parent = workspace.Terrain
+	local gui = Instance.new("BillboardGui")
 	gui.Name = "FuelArc"
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true -- positions are viewport pixels, as the camera gives them
-	gui.ScreenInsets = Enum.ScreenInsets.None
+	gui.Adornee = anchor
+	gui.AlwaysOnTop = true
+	gui.LightInfluence = 0
+	gui.ClipsDescendants = false
 	gui.Parent = parent
 	return setmetatable({
 		_gui = gui,
+		_anchor = anchor,
 		_dots = {},
 		_layout = "",
 		_flashUntil = 0,
@@ -121,10 +132,15 @@ function FuelArc.Update(self: FuelArc, snapshot: Run.Snapshot, ship: ShipConfig.
 		return
 	end
 	local state = snapshot.Ship
-	local centre = camera:WorldToViewportPoint(ArenaSpace.ToWorld(state.Position, 3))
+	local world = ArenaSpace.ToWorld(state.Position, 3)
+	self._anchor.WorldPosition = world
+	-- only the distance between two projected points is used, which no screen offset changes
+	local centre = camera:WorldToViewportPoint(world)
 	local side = camera:WorldToViewportPoint(ArenaSpace.ToWorld(state.Position + Vector2.new(1, 0), 3))
 	local perStud = math.abs(side.X - centre.X)
 	local radius = math.max(RADIUS_MIN, RADIUS_STUDS * perStud)
+	local half = math.ceil(radius + DOT)
+	self._gui.Size = UDim2.fromOffset(2 * half, 2 * half)
 
 	-- fade out when full and idle for a while; back at once when fuel matters
 	local dt = if self._last then now - (self._last :: number) else 0
@@ -145,8 +161,8 @@ function FuelArc.Update(self: FuelArc, snapshot: Run.Snapshot, ship: ShipConfig.
 	local base = FADED * self._fade
 	for _, dot in self._dots do
 		local on = state.Fuel > dot.level
-		local x = centre.X + math.sin(dot.angle) * radius
-		local y = centre.Y + math.cos(dot.angle) * radius -- screen y grows downward: the arc hangs below
+		local x = half + math.sin(dot.angle) * radius
+		local y = half + math.cos(dot.angle) * radius -- screen y grows downward: the arc hangs below
 		dot.frame.Position = UDim2.fromOffset(x, y)
 		dot.frame.BackgroundColor3 = if on then lit else UNLIT
 		dot.frame.BackgroundTransparency = if on then base else 0.5 + 0.5 * base
