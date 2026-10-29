@@ -28,6 +28,7 @@ local RockTypes = require("../Data/RockTypes")
 local RunEvents = require("./RunEvents")
 local RunInput = require("./RunInput")
 local Ship = require("../Ship/Ship")
+local Threat = require("../Rocks/Threat")
 local Tuning = require("./Tuning")
 local WaveDirector = require("../Rocks/WaveDirector")
 
@@ -72,6 +73,7 @@ export type Snapshot = {
 	Ship: Ship.Ship,
 	FuelMax: number,
 	Rocks: { Rock.Rock },
+	ThreatId: number?, -- the rock that will hit the planet soonest (see Rocks/Threat), if any
 }
 
 local Run = {}
@@ -237,6 +239,7 @@ function Run.Snapshot(self: Run): Snapshot
 	for _, rock in self._rocks do
 		table.insert(rocks, Rock.Snapshot(rock))
 	end
+	local threat = Threat.Soonest(self._rocks, self._tuning.Arena.PlanetRadius)
 	return table.freeze({
 		Wave = self._director.Wave,
 		Phase = (if self._over then "Over" else self._director.Phase) :: Phase,
@@ -251,6 +254,7 @@ function Run.Snapshot(self: Run): Snapshot
 		Ship = Ship.Snapshot(self._ship),
 		FuelMax = self._tuning.Ship.FuelMax,
 		Rocks = table.freeze(rocks),
+		ThreatId = if threat then threat.Id else nil,
 	})
 end
 
