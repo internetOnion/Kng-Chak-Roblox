@@ -29,7 +29,10 @@ local ArenaConfig = {
 	CamFar = 30, -- ship farther than this: camera centres on the ship
 	CamPlanetShow = 0.35, -- at least this fraction of the planet's width stays on screen
 	CamSettle = 4, -- the camera is locked to its target; this is only how fast it settles after a jump (a restart)
-	CamFov = 20, -- degrees, vertical: narrow, so the view is close to flat (there's no orthographic camera)
+	-- degrees, vertical: narrowish, so the view is close to flat (there's no orthographic camera). Not
+	-- narrower: at 20° the camera sat ~284 studs up and Roblox stopped drawing the far side of the
+	-- screen at low graphics quality (~300 studs); at 30° everything on screen is within ~225.
+	CamFov = 30,
 	CamTilt = 18, -- degrees from straight down, so the toys look solid; top of the screen stays north
 
 	-- World placement

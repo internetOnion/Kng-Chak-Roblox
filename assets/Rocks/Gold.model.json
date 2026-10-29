@@ -5,10 +5,16 @@
       "name": "Body",
       "className": "Part",
       "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
         "Size": [
-          1.8,
-          1.8,
-          1.8
+          2,
+          2,
+          2
         ],
         "Position": [
           0,
@@ -21,49 +27,49 @@
           0.1804
         ],
         "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      },
+      "children": [
+        {
+          "name": "Sparkles",
+          "className": "Sparkles",
+          "properties": {
+            "SparkleColor": [
+              1.0,
+              0.8118,
+              0.1804
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Shine",
+      "className": "Part",
+      "properties": {
         "TopSurface": "Smooth",
         "BottomSurface": "Smooth",
         "Anchored": true,
         "CanCollide": false,
         "CanTouch": false,
         "CanQuery": false,
-        "Shape": "Ball",
-        "Reflectance": 0.25
-      }
-    },
-    {
-      "name": "Ring",
-      "className": "Part",
-      "properties": {
         "Size": [
-          0.18,
-          2.9,
-          2.9
+          0.5,
+          0.5,
+          0.5
         ],
         "Position": [
-          0,
-          0,
-          0
+          -0.35,
+          0.7,
+          -0.35
         ],
         "Color": [
           1.0,
-          0.9451,
-          0.6588
+          1.0,
+          1.0
         ],
         "Material": "SmoothPlastic",
-        "TopSurface": "Smooth",
-        "BottomSurface": "Smooth",
-        "Anchored": true,
-        "CanCollide": false,
-        "CanTouch": false,
-        "CanQuery": false,
-        "Shape": "Cylinder",
-        "Orientation": [
-          0,
-          0,
-          90
-        ],
-        "Reflectance": 0.3
+        "Shape": "Ball"
       }
     },
     {

@@ -54,13 +54,19 @@ function CameraView.Update(self: CameraView, shipPosition: Vector2, arena: Arena
 	end
 	self._target = target
 	self._offset *= math.exp(-arena.CamSettle * dt)
-	local look = target + self._offset
+	CameraView.LookAt(self, target + self._offset, arena)
+end
 
+-- Points the camera straight at an arena position, at the game's zoom, field of view and tilt.
+function CameraView.LookAt(_self: CameraView, focus: Vector2, arena: ArenaConfig.ArenaConfig)
+	local camera = workspace.CurrentCamera
+	camera.CameraType = Enum.CameraType.Scriptable
+	camera.FieldOfView = arena.CamFov
 	local distance = arena.CamView / math.tan(math.rad(arena.CamFov / 2))
 	local tilt = math.rad(arena.CamTilt)
 	-- Back toward the bottom of the screen (world +Z) and up, by the tilt angle.
 	local offset = Vector3.new(0, math.cos(tilt), math.sin(tilt)) * distance
-	local world = ArenaSpace.ToWorld(look)
+	local world = ArenaSpace.ToWorld(focus)
 	camera.CFrame = CFrame.lookAt(world + offset, world)
 end
 

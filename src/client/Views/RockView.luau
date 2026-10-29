@@ -39,14 +39,19 @@ export type RockView = typeof(setmetatable(
 	{} :: {
 		_parent: Instance,
 		_prefabs: Folder,
+		_planet: Vector2, -- where rocks point (the planet's centre)
 		_drawn: { [number]: Drawn }, -- by rock Id
 	},
 	RockView
 ))
 
-function RockView.new(parent: Instance): RockView
+-- `planet` is where rocks point (default: the arena's centre).
+function RockView.new(parent: Instance, planet: Vector2?): RockView
 	local prefabs = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Rocks") :: Folder
-	return setmetatable({ _parent = parent, _prefabs = prefabs, _drawn = {} }, RockView)
+	return setmetatable(
+		{ _parent = parent, _prefabs = prefabs, _planet = planet or Vector2.zero, _drawn = {} },
+		RockView
+	)
 end
 
 local function build(self: RockView, rock: Rock.Rock): Drawn
@@ -74,7 +79,7 @@ function RockView.Update(self: RockView, rocks: { Rock.Rock })
 			self._drawn[rock.Id] = drawn
 		end
 		-- front toward the planet, so a comet's tail streams out behind it
-		drawn.model:PivotTo(ArenaSpace.CFrameAt(rock.Position, -rock.Position, LIFT))
+		drawn.model:PivotTo(ArenaSpace.CFrameAt(rock.Position, self._planet - rock.Position, LIFT))
 
 		local outline = drawn.outline
 		if outline and drawn.primed ~= rock.IsPrimed then

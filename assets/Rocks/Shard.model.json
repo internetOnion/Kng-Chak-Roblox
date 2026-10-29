@@ -5,10 +5,16 @@
       "name": "Body",
       "className": "Part",
       "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
         "Size": [
-          1.35,
-          1.35,
-          1.35
+          2.2,
+          1,
+          1.1
         ],
         "Position": [
           0,
@@ -21,32 +27,32 @@
           0.4784
         ],
         "Material": "SmoothPlastic",
-        "TopSurface": "Smooth",
-        "BottomSurface": "Smooth",
-        "Anchored": true,
-        "CanCollide": false,
-        "CanTouch": false,
-        "CanQuery": false,
         "Orientation": [
+          0,
           35,
-          45,
-          0
+          15
         ]
       }
     },
     {
-      "name": "BodyTip",
-      "className": "Part",
+      "name": "BodyWedge",
+      "className": "WedgePart",
       "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
         "Size": [
-          0.7,
-          0.7,
-          0.7
+          1.1,
+          1,
+          1.2
         ],
         "Position": [
+          1.1,
           0,
-          0.3,
-          -0.75
+          -0.6
         ],
         "Color": [
           0.9098,
@@ -54,16 +60,10 @@
           0.4784
         ],
         "Material": "SmoothPlastic",
-        "TopSurface": "Smooth",
-        "BottomSurface": "Smooth",
-        "Anchored": true,
-        "CanCollide": false,
-        "CanTouch": false,
-        "CanQuery": false,
         "Orientation": [
-          45,
           0,
-          45
+          35,
+          0
         ]
       }
     },

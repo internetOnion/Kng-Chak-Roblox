@@ -21,12 +21,13 @@ PlanetView.__index = PlanetView
 
 export type PlanetView = typeof(setmetatable({} :: { _model: Model }, PlanetView))
 
-function PlanetView.new(parent: Instance): PlanetView
+-- A planet at `centre` (default: the arena's centre, where the Run's planet is).
+function PlanetView.new(parent: Instance, centre: Vector2?): PlanetView
 	local prefab = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Planet"):WaitForChild("Planet") :: Model
 	local model = prefab:Clone()
 	model.WorldPivot = CFrame.identity -- assets are built around the origin; Studio may have picked another pivot
 	model:ScaleTo(ArenaConfig.PlanetRadius / MODEL_RADIUS)
-	model:PivotTo(ArenaSpace.CFrameAt(Vector2.zero))
+	model:PivotTo(ArenaSpace.CFrameAt(centre or Vector2.zero))
 	model.Parent = parent
 	return setmetatable({ _model = model }, PlanetView)
 end
