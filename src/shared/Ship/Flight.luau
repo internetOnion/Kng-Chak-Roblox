@@ -18,7 +18,6 @@ local Orbit = require("./Orbit")
 local Rock = require("../Rocks/Rock")
 local RunInput = require("../Run/RunInput")
 local Ship = require("./Ship")
-local Tuning = require("../Run/Tuning")
 
 local Flight = {}
 
@@ -38,8 +37,8 @@ local function withLength(v: Vector2, length: number): Vector2
 end
 
 -- Starts a boost burst if there's fuel for it. Returns whether it started.
-local function tryBoost(ship: Ship.Ship, tuning: Tuning.Tuning, want: number?): boolean
-	local config = tuning.Ship
+local function tryBoost(ship: Ship.Ship, ctx: Context.Context, want: number?): boolean
+	local config = ctx.tuning.Ship
 	if ship.StunTime > 0 or ship.Fuel < config.BoostCost then
 		return false
 	end
@@ -48,6 +47,7 @@ local function tryBoost(ship: Ship.Ship, tuning: Tuning.Tuning, want: number?): 
 	if want then
 		ship.Heading = want -- a boost turns the nose sharply, straight away
 	end
+	ctx.events.Boosted:Fire()
 	return true
 end
 
@@ -70,7 +70,7 @@ local function leaveOrbit(ship: Ship.Ship, ctx: Context.Context, want: number?, 
 		return false
 	end
 	Orbit.Leave(ship, ctx, angle)
-	tryBoost(ship, ctx.tuning, angle)
+	tryBoost(ship, ctx, angle)
 	return true
 end
 
@@ -252,7 +252,7 @@ function Flight.Step(ship: Ship.Ship, ctx: Context.Context, input: RunInput.RunI
 		if ship.IsInOrbit then
 			leaveOrbit(ship, ctx, want, true)
 		else
-			tryBoost(ship, tuning, want)
+			tryBoost(ship, ctx, want)
 		end
 	end
 	if ship.IsInOrbit and want and Orbit.AimsOut(ship, tuning, want) then

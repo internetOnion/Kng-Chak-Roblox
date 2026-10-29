@@ -160,6 +160,19 @@ describe("Boost and fuel", function()
 		expect(ship(run).Fuel).toBe(ShipConfig.FuelMax)
 	end)
 
+	it("fires Boosted once per boost burst, and not when there's too little fuel", function()
+		local run = Run.new({ ShipStart = Vector2.new(0, -40), Tuning = { Ship = { FuelRegen = 0 } } })
+		local boosts = 0
+		run.Events.Boosted:Connect(function()
+			boosts += 1
+		end)
+		for _ = 1, 5 do
+			run:Step(BOOST, FRAME)
+			play(run, RunInput.steer(RIGHT), ShipConfig.BoostDuration + 0.05)
+		end
+		expect(boosts).toBe(math.floor(ShipConfig.FuelMax / ShipConfig.BoostCost))
+	end)
+
 	it("keeps a boost pressed on a frame too short for a sub-step", function()
 		local run = Run.new({ ShipStart = Vector2.new(0, -40) })
 		run:Step(BOOST, 0.001)
