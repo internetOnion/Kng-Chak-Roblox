@@ -2,10 +2,15 @@
 --[[
 	CameraView: the scripted camera looking down on the play plane.
 
-	It sits high above the plane with a narrow field of view, tilted ArenaConfig.CamTilt
-	from straight down with north at the top of the screen. Its distance is set so
-	that ArenaConfig.CamView arena units show from the screen's centre to its top
-	and bottom edges. For now it stays on the planet; following the ship comes later.
+	    local camera = CameraView.new()
+	    camera:Update(snapshot.Ship.Position, run:GetTuning().Arena, dt) -- every frame
+
+	It sits high above the plane with a narrow field of view, tilted CamTilt from
+	straight down with north at the top of the screen, far enough that CamView arena
+	units show from the screen's centre to its nearer edge. It follows the ship out
+	in the arena and eases onto the planet near orbit (see Arena/ViewMath). It only
+	pans: it never rotates and never lags; only a sudden jump in its target (a
+	restart) is eased out over CamSettle.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -13,21 +18,50 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local KngChak = ReplicatedStorage.KngChak
 local ArenaConfig = require(KngChak.Data.ArenaConfig)
 local ArenaSpace = require(KngChak.Arena.ArenaSpace)
+local ViewMath = require(KngChak.Arena.ViewMath)
+
+local JUMP = 5 -- a target move bigger than this in one frame is a jump, not flight
 
 local CameraView = {}
+CameraView.__index = CameraView
 
--- Points the current camera at an arena position.
-function CameraView.LookAt(focus: Vector2)
+export type CameraView = typeof(setmetatable(
+	{} :: {
+		_target: Vector2?,
+		_offset: Vector2, -- what's left of a jump, decaying to zero
+	},
+	CameraView
+))
+
+function CameraView.new(): CameraView
 	local camera = workspace.CurrentCamera
 	camera.CameraType = Enum.CameraType.Scriptable
-	camera.FieldOfView = ArenaConfig.CamFov
-
-	local distance = ArenaConfig.CamView / math.tan(math.rad(ArenaConfig.CamFov / 2))
-	local tilt = math.rad(ArenaConfig.CamTilt)
-	-- Back toward the bottom of the screen (world +Z) and up, by the tilt angle.
-	local offset = Vector3.new(0, math.cos(tilt), math.sin(tilt)) * distance
-	local target = ArenaSpace.ToWorld(focus)
-	camera.CFrame = CFrame.lookAt(target + offset, target)
+	return setmetatable({ _target = nil, _offset = Vector2.zero }, CameraView)
 end
 
-return table.freeze(CameraView)
+function CameraView.Update(self: CameraView, shipPosition: Vector2, arena: ArenaConfig.ArenaConfig, dt: number)
+	local camera = workspace.CurrentCamera
+	camera.CameraType = Enum.CameraType.Scriptable
+	camera.FieldOfView = arena.CamFov
+
+	local viewport = camera.ViewportSize
+	local aspect = if viewport.Y > 0 then viewport.X / viewport.Y else 16 / 9
+	local target = ViewMath.CameraFocus(arena, shipPosition, ViewMath.ViewHalf(arena, aspect))
+
+	local last = self._target
+	if last and (target - last).Magnitude > JUMP then
+		self._offset += last - target
+	end
+	self._target = target
+	self._offset *= math.exp(-arena.CamSettle * dt)
+	local look = target + self._offset
+
+	local distance = arena.CamView / math.tan(math.rad(arena.CamFov / 2))
+	local tilt = math.rad(arena.CamTilt)
+	-- Back toward the bottom of the screen (world +Z) and up, by the tilt angle.
+	local offset = Vector3.new(0, math.cos(tilt), math.sin(tilt)) * distance
+	local world = ArenaSpace.ToWorld(look)
+	camera.CFrame = CFrame.lookAt(world + offset, world)
+end
+
+return CameraView

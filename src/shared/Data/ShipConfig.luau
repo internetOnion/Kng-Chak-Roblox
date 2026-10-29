@@ -39,4 +39,6 @@ local ShipConfig = {
 	NozzleDist = 1.95, -- centre to the engine nozzle, where the flame starts
 }
 
+export type ShipConfig = typeof(ShipConfig)
+
 return table.freeze(ShipConfig)
