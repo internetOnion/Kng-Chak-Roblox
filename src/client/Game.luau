@@ -20,10 +20,11 @@ local GameEvents = require(KngChak.GameEvents)
 local Run = require(KngChak.Run.Run)
 
 local CameraView = require(script.Parent.Views.CameraView)
+local Device = require(script.Parent.Device)
 local Hud = require(script.Parent.UI.Hud)
-local MouseInput = require(script.Parent.Input.MouseInput)
 local Overlay = require(script.Parent.UI.Overlay)
 local PlanetView = require(script.Parent.Views.PlanetView)
+local PlayerInput = require(script.Parent.Input.PlayerInput)
 local RingsView = require(script.Parent.Views.RingsView)
 local RockView = require(script.Parent.Views.RockView)
 local ShipView = require(script.Parent.Views.ShipView)
@@ -64,10 +65,11 @@ local function endSession(session: Session)
 end
 
 return function()
-	local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
+	local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui") :: PlayerGui
+	Device.Setup(playerGui)
 	local hud = Hud.new(playerGui)
 	local overlay = Overlay.new(playerGui)
-	local mouse = MouseInput.new()
+	local controls = PlayerInput.new(playerGui)
 	local camera = CameraView.new()
 
 	local session = newSession()
@@ -75,6 +77,7 @@ return function()
 	local state: State = "Start"
 
 	local function play()
+		controls:Reset()
 		state = "Playing"
 		overlay:Hide()
 		hud:SetVisible(true)
@@ -92,7 +95,7 @@ return function()
 
 	RunService.RenderStepped:Connect(function(dt: number)
 		if state == "Playing" then
-			session.run:Step(mouse:Read(snapshot.Ship.Position), dt)
+			session.run:Step(controls:Read(snapshot.Ship.Position), dt)
 		end
 		snapshot = session.run:Snapshot()
 
