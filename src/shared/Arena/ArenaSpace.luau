@@ -12,7 +12,7 @@
 	1 arena unit = 1 stud. Only this module knows the mapping, so keep world maths here.
 ]]
 
-local ArenaConfig = require(script.Parent.Parent.Data.ArenaConfig)
+local ArenaConfig = require("../Data/ArenaConfig")
 
 local ArenaSpace = {}
 

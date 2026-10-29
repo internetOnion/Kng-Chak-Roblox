@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Format check, lint and type check. Run before opening a PR: all three must pass.
+# Format check, lint, type check and tests. Run before opening a PR: CI runs the same.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -9,8 +9,17 @@ if [ ! -f "$DEFS" ]; then
 	curl -fsSL -o "$DEFS" https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/main/scripts/globalTypes.d.luau
 fi
 
+echo "== Format"
+stylua --check src tests .lune
+
+echo "== Lint"
+selene src tests .lune
+
+echo "== Types"
 rojo sourcemap default.project.json -o sourcemap.json
-stylua --check src
-selene src
-luau-lsp analyze --definitions="$DEFS" --sourcemap=sourcemap.json --base-luaurc=.luaurc src
+luau-lsp analyze --definitions="$DEFS" --sourcemap=sourcemap.json src tests
+
+echo "== Tests"
+lune run test
+
 echo "All checks passed."
