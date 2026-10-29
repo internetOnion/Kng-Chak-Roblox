@@ -99,7 +99,7 @@ local function stepRocks(self: Run, dt: number)
 	local planetRadius = self._tuning.Arena.PlanetRadius
 	local survivors = {}
 	for _, rock in self._rocks do
-		Rock.Fall(rock, dt)
+		Rock.Fall(rock, self._tuning, dt)
 		if Rock.TouchesPlanet(rock, planetRadius) then
 			local damage = rock.Type.DamagePercent
 			self.Events.PlanetHit:Fire(Rock.Snapshot(rock), damage)

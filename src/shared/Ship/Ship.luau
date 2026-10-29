@@ -14,6 +14,7 @@
 	    ship.Fuel        number   0..ShipConfig.FuelMax
 	    ship.IsStunned   boolean  after a bad bump: no control, grey flame
 	    ship.FlameReach  number   how far the flame (the push zone) reaches from the ship's centre
+	    ship.FlameDirection Vector2  unit vector the flame streams out along: behind the nose, or outward in orbit
 	    ship.IsInOrbit   boolean  locked onto the orbit track (it can't touch the planet)
 	    ship.IsCaptured  boolean  in orbit past the capture time: leaving costs a boost
 	    ship.IsSlingshotting boolean  diving out of orbit at slingshot speed, spear out
@@ -32,6 +33,7 @@ export type Ship = {
 	IsStunned: boolean,
 	Fuel: number,
 	FlameReach: number,
+	FlameDirection: Vector2,
 	BoostTime: number, -- seconds of boost left
 	ExitTime: number, -- seconds left of the boost's exit (sharper turning and grip)
 	StunTime: number, -- seconds of stun left
@@ -65,6 +67,7 @@ function Ship.new(position: Vector2, fuel: number, heading: number?): Ship
 		IsStunned = false,
 		Fuel = fuel,
 		FlameReach = 0,
+		FlameDirection = -Vector2.new(math.cos(angle), math.sin(angle)),
 		BoostTime = 0,
 		ExitTime = 0,
 		StunTime = 0,

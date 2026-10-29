@@ -68,6 +68,7 @@ function StyleTile.new(): StyleTile
 	ShipView.new(folder):Update({
 		Position = CENTRE + CRUISE.at,
 		Facing = CRUISE.facing,
+		FlameDirection = -CRUISE.facing,
 		IsSpearOut = false,
 		IsBoosting = false,
 		IsSlingshotting = false,
@@ -77,6 +78,7 @@ function StyleTile.new(): StyleTile
 	ShipView.new(folder):Update({
 		Position = CENTRE + BOOST.at,
 		Facing = BOOST.facing,
+		FlameDirection = -BOOST.facing,
 		IsSpearOut = true,
 		IsBoosting = true,
 		IsSlingshotting = false,

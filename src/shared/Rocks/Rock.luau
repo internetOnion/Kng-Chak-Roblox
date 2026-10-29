@@ -15,9 +15,12 @@
 	    rock.IsPrimed     boolean   pushed by the flame recently; worth more when broken
 	    rock.PrimedTime   number    seconds of priming left
 	    rock.PushCooldown number    seconds before the flame can push it again
+	    rock.IsFlared     boolean   pushed by the orbit flare once (it can't be flared again)
+	    rock.HangTime     number    seconds left hanging nearly still after a flare
 ]]
 
 local RockTypes = require("../Data/RockTypes")
+local Tuning = require("../Run/Tuning")
 
 export type Rock = {
 	Id: number,
@@ -28,6 +31,8 @@ export type Rock = {
 	IsPrimed: boolean,
 	PrimedTime: number,
 	PushCooldown: number,
+	IsFlared: boolean,
+	HangTime: number,
 }
 
 local SETTLE_RATE = 1 -- how fast a pushed rock's speed toward the planet returns to its fall speed
@@ -48,17 +53,23 @@ function Rock.new(id: number, rockType: RockTypes.RockType, position: Vector2, s
 		IsPrimed = false,
 		PrimedTime = 0,
 		PushCooldown = 0,
+		IsFlared = false,
+		HangTime = 0,
 	}
 end
 
 --[[
 	Moves the rock for dt seconds. It falls toward the planet: after a push its
 	speed toward the planet eases back to its fall speed and sideways drift dies
-	out, so a push carries it a while before it falls again. Priming wears off.
+	out, so a push carries it a while before it falls again. A flared rock hangs
+	nearly still instead until its hang time runs out. Priming wears off.
 ]]
-function Rock.Fall(rock: Rock, dt: number)
+function Rock.Fall(rock: Rock, tuning: Tuning.Tuning, dt: number)
 	local distance = rock.Position.Magnitude
-	if distance > 1e-6 then
+	if rock.HangTime > 0 then
+		rock.HangTime = math.max(0, rock.HangTime - dt)
+		rock.Velocity *= 1 - math.min(1, tuning.Ship.FlareHangDrag * dt)
+	elseif distance > 1e-6 then
 		local inward = -rock.Position / distance
 		local v = rock.Velocity
 		local along = v:Dot(inward)
