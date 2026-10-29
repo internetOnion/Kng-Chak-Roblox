@@ -17,6 +17,15 @@
 --   Perfect       only a PERFECT: primed, then slingshot (gold)
 export type BreaksBy = "Any" | "Primed" | "PrimedOrDive" | "Perfect"
 
+-- What a rock breaks into (a cluster's shards).
+export type Split = {
+	Into: string, -- the shards' rock type id
+	Count: number,
+	Speed: number, -- shards fly apart this fast...
+	Lift: number, -- ...plus this fast away from the planet
+	Grace: number, -- seconds before a new shard can hit the ship (so the ram that split it doesn't break them all)
+}
+
 export type RockType = {
 	Id: string,
 	Radius: number, -- arena units (the prototype's `size` is a radius)
@@ -29,6 +38,7 @@ export type RockType = {
 	Score: number, -- points for breaking it
 	PushFactor: number, -- how far a flame push moves it (1 = normal, lower = moves less)
 	DamagePercent: number, -- planet HP lost when it hits
+	Split: Split?, -- breaking it splits it into shards
 }
 
 local function define(def: RockType): RockType
@@ -81,6 +91,7 @@ local RockTypes = {
 		Score = 100,
 		PushFactor = 0.6,
 		DamagePercent = 10,
+		Split = table.freeze({ Into = "Shard", Count = 3, Speed = 7, Lift = 3, Grace = 0.45 }),
 	}),
 	Shard = define({
 		Id = "Shard",

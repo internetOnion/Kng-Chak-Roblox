@@ -12,11 +12,13 @@
 	    rock.Position     Vector2   arena position
 	    rock.Velocity     Vector2   arena units per second
 	    rock.FallSpeed    number    speed toward the planet (its type's, scaled by the wave)
+	    rock.SpeedMult    number    the wave's fall speed multiplier it was made with
 	    rock.IsPrimed     boolean   pushed by the flame recently; worth more when broken
 	    rock.PrimedTime   number    seconds of priming left
 	    rock.PushCooldown number    seconds before the flame can push it again
 	    rock.IsFlared     boolean   pushed by the orbit flare once (it can't be flared again)
 	    rock.HangTime     number    seconds left hanging nearly still after a flare
+	    rock.GraceTime    number    seconds left before it can touch the ship (a new shard)
 ]]
 
 local RockTypes = require("../Data/RockTypes")
@@ -28,11 +30,13 @@ export type Rock = {
 	Position: Vector2,
 	Velocity: Vector2,
 	FallSpeed: number,
+	SpeedMult: number,
 	IsPrimed: boolean,
 	PrimedTime: number,
 	PushCooldown: number,
 	IsFlared: boolean,
 	HangTime: number,
+	GraceTime: number,
 }
 
 local SETTLE_RATE = 1 -- how fast a pushed rock's speed toward the planet returns to its fall speed
@@ -40,21 +44,35 @@ local SIDE_DAMPING = 0.8 -- how fast sideways drift dies out
 
 local Rock = {}
 
--- A new rock, already falling. `speedMult` scales its type's fall speed (default 1).
-function Rock.new(id: number, rockType: RockTypes.RockType, position: Vector2, speedMult: number?): Rock
-	local fallSpeed = rockType.FallSpeed * (speedMult or 1)
+--[[
+	A new rock. `speedMult` scales its type's fall speed (default 1). It starts
+	falling straight at the planet unless given a `velocity`; a `grace` time keeps
+	it from touching the ship at first.
+]]
+function Rock.new(
+	id: number,
+	rockType: RockTypes.RockType,
+	position: Vector2,
+	speedMult: number?,
+	velocity: Vector2?,
+	grace: number?
+): Rock
+	local mult = speedMult or 1
+	local fallSpeed = rockType.FallSpeed * mult
 	local distance = position.Magnitude
 	return {
 		Id = id,
 		Type = rockType,
 		Position = position,
-		Velocity = if distance > 1e-6 then -position / distance * fallSpeed else Vector2.zero,
+		Velocity = velocity or if distance > 1e-6 then -position / distance * fallSpeed else Vector2.zero,
 		FallSpeed = fallSpeed,
+		SpeedMult = mult,
 		IsPrimed = false,
 		PrimedTime = 0,
 		PushCooldown = 0,
 		IsFlared = false,
 		HangTime = 0,
+		GraceTime = grace or 0,
 	}
 end
 
@@ -81,6 +99,7 @@ function Rock.Fall(rock: Rock, tuning: Tuning.Tuning, dt: number)
 	rock.Position += rock.Velocity * dt
 
 	rock.PushCooldown = math.max(0, rock.PushCooldown - dt)
+	rock.GraceTime = math.max(0, rock.GraceTime - dt)
 	if rock.IsPrimed then
 		rock.PrimedTime -= dt
 		if rock.PrimedTime <= 0 then

@@ -34,6 +34,7 @@ local WaveDirector = require("../Rocks/WaveDirector")
 local STEP = 1 / 60 -- seconds per fixed sub-step
 local MAX_FRAME = 0.25 -- a longer frame (a hitch) only advances this much, so nothing teleports
 local EPSILON = 1e-9 -- absorbs float error, so 1/30 s always makes exactly two sub-steps
+local COMBAT_SEED_OFFSET = 7919 -- combat's RNG is seeded apart from the waves', so splits don't change spawns
 
 export type Input = RunInput.RunInput
 
@@ -97,9 +98,21 @@ export type Run = typeof(setmetatable(
 	Run
 ))
 
-local function addRock(self: Run, rockType: RockTypes.RockType, position: Vector2, speedMult: number?)
-	table.insert(self._rocks, Rock.new(self._nextRockId, rockType, position, speedMult))
+local function newRock(
+	self: Run,
+	rockType: RockTypes.RockType,
+	position: Vector2,
+	speedMult: number?,
+	velocity: Vector2?,
+	grace: number?
+): Rock.Rock
+	local rock = Rock.new(self._nextRockId, rockType, position, speedMult, velocity, grace)
 	self._nextRockId += 1
+	return rock
+end
+
+local function addRock(self: Run, rockType: RockTypes.RockType, position: Vector2, speedMult: number?)
+	table.insert(self._rocks, newRock(self, rockType, position, speedMult))
 end
 
 local function stepRocks(self: Run, dt: number)
@@ -167,7 +180,7 @@ function Run.new(setup: Setup?): Run
 			setup and setup.ShipHeading
 		),
 		_rocks = rocks,
-		_ctx = { tuning = tuning, events = events, rocks = rocks, combo = combo, planet = planet },
+		_ctx = nil :: any, -- set just below: it needs the Run
 		_combo = combo,
 		_nextRockId = 1,
 		_director = WaveDirector.new(Rng.new(setup and setup.Seed or 1), setup and setup.Waves),
@@ -176,6 +189,24 @@ function Run.new(setup: Setup?): Run
 		_pending = 0,
 		_boostQueued = false,
 	}, Run)
+	local seed = setup and setup.Seed or 1
+	self._ctx = {
+		tuning = tuning,
+		events = events,
+		rocks = rocks,
+		combo = combo,
+		planet = planet,
+		rng = Rng.new(seed + COMBAT_SEED_OFFSET),
+		newRock = function(
+			rockType: RockTypes.RockType,
+			position: Vector2,
+			speedMult: number?,
+			velocity: Vector2?,
+			grace: number?
+		): Rock.Rock
+			return newRock(self, rockType, position, speedMult, velocity, grace)
+		end,
+	}
 	local startRocks = setup and setup.Rocks
 	if startRocks then
 		for _, rock in startRocks do

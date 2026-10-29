@@ -27,7 +27,9 @@
 	    plain boosted ram        Ram        scores, never heals
 
 	Breaking a primed rock gives fuel back. A break scores the rock's score × its
-	combo points × the combo multiplier from before the break.
+	combo points × the combo multiplier from before the break. A rock type with a
+	Split (the cluster) breaks into that many shards, which fly apart and can't
+	touch the ship for their grace time.
 
 	The Run calls Step once per sub-step, after the ship and rocks have moved.
 	It returns the rocks that survived.
@@ -36,6 +38,7 @@
 local Combo = require("./Combo")
 local Context = require("../Run/Context")
 local Rock = require("../Rocks/Rock")
+local RockTypes = require("../Data/RockTypes")
 local Ship = require("../Ship/Ship")
 
 local Combat = {}
@@ -130,6 +133,26 @@ local function clang(ship: Ship.Ship, rock: Rock.Rock, toRock: Vector2, ctx: Con
 	ctx.events.RockClanged:Fire(Rock.Snapshot(rock), knock)
 end
 
+-- Splits a broken rock into its shards, added to `into`.
+local function split(rock: Rock.Rock, ctx: Context.Context, into: { Rock.Rock })
+	local rule = rock.Type.Split
+	if not rule then
+		return
+	end
+	local shardType = (RockTypes :: any)[rule.Into] :: RockTypes.RockType
+	local outward = rock.Position.Unit
+	local base = ctx.rng:Next() * 2 * math.pi
+	local shards = {}
+	for i = 1, rule.Count do
+		local angle = base + (i - 1) / rule.Count * 2 * math.pi
+		local velocity = Vector2.new(math.cos(angle), math.sin(angle)) * rule.Speed + outward * rule.Lift
+		local shard = ctx.newRock(shardType, rock.Position + velocity * 0.12, rock.SpeedMult, velocity, rule.Grace)
+		table.insert(into, shard)
+		table.insert(shards, Rock.Snapshot(shard))
+	end
+	ctx.events.RockSplit:Fire(Rock.Snapshot(rock), table.freeze(shards))
+end
+
 -- Breaks `rock` and pays out for how it broke. Returns the score it earned.
 local function breakRock(ship: Ship.Ship, rock: Rock.Rock, ctx: Context.Context): number
 	local tuning, events = ctx.tuning, ctx.events
@@ -174,6 +197,7 @@ function Combat.Step(ship: Ship.Ship, ctx: Context.Context): Result
 	local cosCone = math.cos(math.rad(if ship.IsInOrbit then config.FlareConeDeg else config.PushConeDeg))
 
 	local survivors = {}
+	local shards = {}
 	local score = 0
 	for _, rock in ctx.rocks do
 		local offset = rock.Position - ship.Position
@@ -187,11 +211,12 @@ function Combat.Step(ship: Ship.Ship, ctx: Context.Context): Result
 			and along < config.SpearTip + radius * 0.7
 			and lateral < radius * 0.8 + config.SpearHalfWidth
 
-		if touchesBody or touchesSpear then
+		if rock.GraceTime <= 0 and (touchesBody or touchesSpear) then
 			local toRock = if distance > 1e-3 then offset / distance else facing
 			local front = touchesSpear or distance < 1e-3 or along / distance >= cosBreak
 			if hard and front and canBreak(ship, rock) then
 				score += breakRock(ship, rock, ctx)
+				split(rock, ctx, shards)
 				continue
 			elseif hard and front then
 				clang(ship, rock, toRock, ctx)
@@ -204,6 +229,9 @@ function Combat.Step(ship: Ship.Ship, ctx: Context.Context): Result
 			end
 		end
 		table.insert(survivors, rock)
+	end
+	for _, shard in shards do
+		table.insert(survivors, shard)
 	end
 	return { survivors = survivors, score = score }
 end
