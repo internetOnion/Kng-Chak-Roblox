@@ -166,6 +166,13 @@ describe("Flame push and prime", function()
 		expect(run:Snapshot().Rocks[1].IsPrimed).toBe(false)
 	end)
 
+	it("pushes a big rock once the flame reaches its edge, though its centre is past the reach", function()
+		-- at 0.2 throttle the flame reaches 6: iron's centre is beyond that, its near edge isn't
+		local run = arena({ { RockTypes.Iron, Vector2.new(-6.8, 0) } })
+		play(run, RunInput.steer(RIGHT, 0.2), 0.3)
+		expect(run:Snapshot().Rocks[1].IsPrimed).toBe(true)
+	end)
+
 	it("cools a primed rock down after the data's primed time", function()
 		local run = arena({ { RockTypes.Rock, Vector2.new(-4, 0) } })
 		play(run, RunInput.steer(RIGHT), 0.1)
