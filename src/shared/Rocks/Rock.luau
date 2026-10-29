@@ -14,7 +14,6 @@
 	    rock.IsPrimed  boolean   pushed by the flame (milestone 1, flame push)
 ]]
 
-local ArenaConfig = require("../Data/ArenaConfig")
 local RockTypes = require("../Data/RockTypes")
 
 export type Rock = {
@@ -48,9 +47,9 @@ function Rock.Fall(rock: Rock, dt: number)
 	rock.Position += rock.Velocity * dt
 end
 
--- True once the rock's edge has reached the planet's surface.
-function Rock.TouchesPlanet(rock: Rock): boolean
-	return rock.Position.Magnitude <= ArenaConfig.PlanetRadius + rock.Type.Radius
+-- True once the rock's edge has reached the surface of a planet of `planetRadius`.
+function Rock.TouchesPlanet(rock: Rock, planetRadius: number): boolean
+	return rock.Position.Magnitude <= planetRadius + rock.Type.Radius
 end
 
 -- A frozen copy of the rock, safe to hand to code outside the simulation.
