@@ -70,6 +70,13 @@ local ShipConfig = {
 	PushLift = 4, -- ...and away from the planet, both × the rock type's PushFactor
 	PushCooldown = 0.5, -- seconds before the same rock can be pushed again
 	PrimedTime = 5, -- seconds a pushed rock stays primed
+
+	-- Orbit flare (in orbit the flame fans outward, away from the planet)
+	FlareRange = 7, -- the flare's reach...
+	FlareConeDeg = 50, -- ...and half-angle
+	FlareLift = 4, -- a flared rock pops up this fast...
+	FlareHang = 1, -- ...then hangs nearly still this long (slingshot into it for a PERFECT)
+	FlareHangDrag = 2.5, -- how fast a hanging rock's motion dies out
 }
 
 export type ShipConfig = typeof(ShipConfig)

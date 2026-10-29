@@ -8,8 +8,9 @@
 	The model is a clone of ReplicatedStorage.Assets.Ship.Ship, built nose along -Z
 	around the origin. The soft Helmet nose shows normally; Spear and SpearTip
 	replace it while the spear is out. The three Flame bands (edge, mid, core)
-	stretch behind the engine as far as the flame's push reach, so the flame you
-	see is the push zone, and take the heat colours of the ship's state.
+	stretch from the engine as far as the flame's push reach, along the flame's
+	direction (behind the nose, or fanned outward in orbit), so the flame you see
+	is the push zone. They take the heat colours of the ship's state.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -41,6 +42,7 @@ export type ShipLook = {
 	IsSlingshotting: boolean,
 	IsStunned: boolean,
 	FlameReach: number,
+	FlameDirection: Vector2,
 }
 
 type Band = {
@@ -111,10 +113,12 @@ function ShipView.Update(self: ShipView, ship: ShipLook)
 		elseif ship.IsBoosting then HEAT.boost
 		else HEAT.soft
 	local length = math.max(PILOT_LENGTH, ship.FlameReach - FLAME_START)
+	-- the bands' +Z runs along the flame
+	local stream = ArenaSpace.CFrameAt(ship.Position, -ship.FlameDirection, LIFT)
 	for i, band in self._bands do
 		local bandLength = length * band.scale
 		band.part.Size = Vector3.new(band.width.X, band.width.Y, bandLength)
-		band.part.CFrame = pivot * CFrame.new(0, 0, FLAME_START + bandLength / 2)
+		band.part.CFrame = stream * CFrame.new(0, 0, FLAME_START + bandLength / 2)
 		band.part.Transparency = FLAME_TRANSPARENCY
 		if heat ~= self._heat then
 			band.part.Color = heat[i]

@@ -290,10 +290,13 @@ function Flight.Step(ship: Ship.Ship, ctx: Context.Context, input: RunInput.RunI
 		ship.LockId = nil
 	end
 
-	-- The flame is the push zone: throttle sets its reach and a boost flares it.
+	-- The flame is the push zone: throttle sets its reach and a boost flares it. In
+	-- orbit it swings round to fan outward, away from the planet (the orbit flare).
 	local reach = 0
 	if ship.IsStunned then
 		reach = 0
+	elseif ship.IsInOrbit then
+		reach = config.FlareRange
 	elseif ship.IsSpearOut then
 		reach = config.PushBoostRange
 	elseif thrust then
@@ -303,6 +306,10 @@ function Flight.Step(ship: Ship.Ship, ctx: Context.Context, input: RunInput.RunI
 	if ship.FlameReach < 0.05 then
 		ship.FlameReach = 0
 	end
+	local streamTo = if ship.IsInOrbit then ship.Position else -ship.Facing
+	local stream = math.atan2(ship.FlameDirection.Y, ship.FlameDirection.X)
+	stream += wrapAngle(math.atan2(streamTo.Y, streamTo.X) - stream) * math.min(1, 12 * dt)
+	ship.FlameDirection = direction(stream)
 end
 
 return table.freeze(Flight)

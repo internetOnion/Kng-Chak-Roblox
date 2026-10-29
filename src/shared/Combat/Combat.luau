@@ -9,6 +9,10 @@
 	- Push: the flame behind the ship is the push zone. A rock inside its cone and
 	  reach is shoved away from the ship and the planet (scaled by its type's
 	  PushFactor) and becomes primed for PrimedTime.
+	- Flare: in orbit the flame fans outward instead (FlareRange, FlareConeDeg). A
+	  rock it touches is primed, pops up at FlareLift and hangs nearly still for
+	  FlareHang, ready for a slingshot. Flaring frees the ship from capture, so the
+	  slingshot is there to take. A rock can only be flared once.
 
 	The Run calls Step once per sub-step, after the ship and rocks have moved.
 	It returns the rocks that survived.
@@ -27,15 +31,26 @@ export type Result = {
 	score: number, -- points earned this step
 }
 
-local function push(rock: Rock.Rock, flame: Vector2, tuning: Tuning.Tuning, events: RunEvents.RunEvents)
-	if rock.PushCooldown > 0 then
+local function push(ship: Ship.Ship, rock: Rock.Rock, tuning: Tuning.Tuning, events: RunEvents.RunEvents)
+	local flare = ship.IsInOrbit
+	if rock.PushCooldown > 0 or (flare and rock.IsFlared) then
 		return
 	end
 	local config = tuning.Ship
 	rock.PushCooldown = config.PushCooldown
-	local factor = rock.Type.PushFactor
 	local outward = rock.Position.Unit
-	rock.Velocity += (-flame * config.PushKick + outward * config.PushLift) * factor
+	if flare then
+		rock.IsFlared = true
+		rock.HangTime = config.FlareHang
+		rock.Velocity = outward * config.FlareLift
+		ship.IsCaptured = false
+		ship.OrbitTime = 0
+		ship.SlingshotCooldown = 0
+		events.RockFlared:Fire(Rock.Snapshot(rock))
+	else
+		local factor = rock.Type.PushFactor
+		rock.Velocity += (ship.FlameDirection * config.PushKick + outward * config.PushLift) * factor
+	end
 	local first = not rock.IsPrimed
 	rock.IsPrimed = true
 	rock.PrimedTime = config.PrimedTime
@@ -70,10 +85,10 @@ end
 function Combat.Step(ship: Ship.Ship, rocks: { Rock.Rock }, tuning: Tuning.Tuning, events: RunEvents.RunEvents): Result
 	local config = tuning.Ship
 	local facing = ship.Facing
-	local flame = facing -- the flame's push zone is behind the nose (the orbit flare turns it in milestone 2)
+	local flame = ship.FlameDirection
 	local hard = ship.IsSpearOut
 	local cosBreak = math.cos(math.rad(config.BreakArcDeg))
-	local cosCone = math.cos(math.rad(config.PushConeDeg))
+	local cosCone = math.cos(math.rad(if ship.IsInOrbit then config.FlareConeDeg else config.PushConeDeg))
 
 	local survivors = {}
 	local score = 0
@@ -100,8 +115,8 @@ function Combat.Step(ship: Ship.Ship, rocks: { Rock.Rock }, tuning: Tuning.Tunin
 				bump(ship, rock, toRock, tuning, events)
 			end
 		elseif ship.FlameReach > config.NozzleDist and distance > 0.3 and distance < ship.FlameReach then
-			if -offset:Dot(flame) / distance > cosCone then
-				push(rock, flame, tuning, events)
+			if offset:Dot(flame) / distance > cosCone then
+				push(ship, rock, tuning, events)
 			end
 		end
 		table.insert(survivors, rock)

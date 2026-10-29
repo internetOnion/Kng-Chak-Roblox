@@ -22,6 +22,10 @@ export type RunEvents = {
 	-- A rock became primed (pushed by the flame), on the first prime only.
 	RockPrimed: Signal.Signal,
 
+	-- (rock: Rock)
+	-- The orbit flare caught a rock: it pops up and hangs nearly still (it's primed too).
+	RockFlared: Signal.Signal,
+
 	-- (rock: Rock, damagePercent: number)
 	-- A rock reached the planet. Planet HP drops by damagePercent right after.
 	PlanetHit: Signal.Signal,
@@ -65,6 +69,7 @@ local RunEvents = {}
 RunEvents.Names = table.freeze({
 	"RockBroken",
 	"RockPrimed",
+	"RockFlared",
 	"PlanetHit",
 	"ShipBumped",
 	"OrbitLocked",
