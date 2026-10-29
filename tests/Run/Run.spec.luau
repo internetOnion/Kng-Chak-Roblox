@@ -39,8 +39,13 @@ describe("Run", function()
 		local start = Vector2.new(0, 20)
 		local arrival = fallTime(rockType, start.Magnitude)
 
+		-- no drag band slowdown, so the rock falls at one speed all the way (see Rocks/DragBand.spec)
 		local function newRun(): Run.Run
-			return Run.new({ Waves = {}, Rocks = { { Type = rockType, Position = start } } })
+			return Run.new({
+				Waves = {},
+				Rocks = { { Type = rockType, Position = start } },
+				Tuning = { Arena = { DragBandMult = 1 } },
+			})
 		end
 
 		it("starts with the planet at full HP and the rock in the arena", function()

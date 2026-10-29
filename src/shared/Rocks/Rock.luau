@@ -39,7 +39,7 @@ export type Rock = {
 	GraceTime: number,
 }
 
-local SETTLE_RATE = 1 -- how fast a pushed rock's speed toward the planet returns to its fall speed
+local SETTLE_RATE = 1 -- how fast a pushed rock's speed toward the planet returns to its fall speed (outside the drag band)
 local SIDE_DAMPING = 0.8 -- how fast sideways drift dies out
 
 local Rock = {}
@@ -79,8 +79,9 @@ end
 --[[
 	Moves the rock for dt seconds. It falls toward the planet: after a push its
 	speed toward the planet eases back to its fall speed and sideways drift dies
-	out, so a push carries it a while before it falls again. A flared rock hangs
-	nearly still instead until its hang time runs out. Priming wears off.
+	out, so a push carries it a while before it falls again. In the drag band just
+	above the orbit track it falls at DragBandMult of its fall speed. A flared rock
+	hangs nearly still instead until its hang time runs out. Priming wears off.
 ]]
 function Rock.Fall(rock: Rock, tuning: Tuning.Tuning, dt: number)
 	local distance = rock.Position.Magnitude
@@ -88,10 +89,14 @@ function Rock.Fall(rock: Rock, tuning: Tuning.Tuning, dt: number)
 		rock.HangTime = math.max(0, rock.HangTime - dt)
 		rock.Velocity *= 1 - math.min(1, tuning.Ship.FlareHangDrag * dt)
 	elseif distance > 1e-6 then
+		local arena = tuning.Arena
+		local inBand = distance < arena.PlanetRadius + arena.OrbitAlt + arena.DragBandHeight
+		local fall = if inBand then rock.FallSpeed * arena.DragBandMult else rock.FallSpeed
+		local settle = if inBand then arena.DragBandSettle else SETTLE_RATE
 		local inward = -rock.Position / distance
 		local v = rock.Velocity
 		local along = v:Dot(inward)
-		v += inward * (rock.FallSpeed - along) * SETTLE_RATE * dt
+		v += inward * (fall - along) * settle * dt
 		local side = v - inward * v:Dot(inward)
 		v -= side * SIDE_DAMPING * dt
 		rock.Velocity = v

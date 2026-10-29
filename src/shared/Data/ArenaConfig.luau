@@ -17,6 +17,11 @@ local ArenaConfig = {
 	OrbitBandTop = 4.5, -- flying below this locks you into orbit
 	OrbitAlt = 2.6, -- height of the locked orbit track
 
+	-- Drag band: rocks slow down just above the orbit track, a last chance to save the planet
+	DragBandHeight = 5, -- from this far above the orbit track down to it...
+	DragBandMult = 0.5, -- ...rocks fall at this fraction of their fall speed...
+	DragBandSettle = 2.5, -- ...and settle to it this fast (outside the band they settle at 1)
+
 	-- Arena edge
 	ArenaRadius = 66, -- soft wall around the play area
 	EdgeShowDist = 8, -- the edge ring fades in when the ship is this close to it
