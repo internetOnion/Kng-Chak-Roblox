@@ -28,6 +28,8 @@ local ArenaConfig = {
 	CamNear = 15, -- ship closer than this to the planet's centre: camera stays on the planet
 	CamFar = 30, -- ship farther than this: camera centres on the ship
 	CamPlanetShow = 0.35, -- at least this fraction of the planet's width stays on screen
+	CamFov = 20, -- degrees, vertical: narrow, so the view is close to flat (there's no orthographic camera)
+	CamTilt = 18, -- degrees from straight down, so the toys look solid; top of the screen stays north
 
 	-- World placement
 	PlaneHeight = 20, -- world Y of the play plane (clear of the template baseplate)

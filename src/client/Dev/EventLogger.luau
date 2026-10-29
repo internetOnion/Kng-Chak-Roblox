@@ -7,7 +7,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GameEvents = require(ReplicatedStorage.KngChak.GameEvents)
-local Signal = require(ReplicatedStorage.KngChak.Util.Signal)
+local RunEvents = require(ReplicatedStorage.KngChak.Run.RunEvents)
 
 local function describe(value: any): string
 	if type(value) == "table" and type(value.Type) == "table" and value.Type.Id then
@@ -17,8 +17,8 @@ local function describe(value: any): string
 end
 
 return function()
-	for name, signal in GameEvents :: { [string]: Signal.Signal } do
-		signal:Connect(function(...)
+	for _, name in RunEvents.Names do
+		RunEvents.Get(GameEvents, name):Connect(function(...)
 			local parts = {}
 			for i = 1, select("#", ...) do
 				table.insert(parts, describe((select(i, ...))))

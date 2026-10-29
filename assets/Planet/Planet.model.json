@@ -1,0 +1,15 @@
+{
+  "className": "Part",
+  "properties": {
+    "Shape": "Ball",
+    "Size": [20, 20, 20],
+    "Color": [0.18, 0.77, 1],
+    "Material": "SmoothPlastic",
+    "TopSurface": "Smooth",
+    "BottomSurface": "Smooth",
+    "Anchored": true,
+    "CanCollide": false,
+    "CanTouch": false,
+    "CastShadow": false
+  }
+}
