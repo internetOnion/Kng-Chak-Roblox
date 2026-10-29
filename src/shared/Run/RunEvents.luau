@@ -15,7 +15,9 @@ local Signal = require("../Util/Signal")
 
 export type RunEvents = {
 	-- (rock: Rock, cause: string)
-	-- The player destroyed a rock. cause says how: "Ram" (boosted spear) or "Dive" (slingshot).
+	-- The player destroyed a rock. cause says how: "Ram" (a plain boosted ram), "PushBreak"
+	-- (primed, then rammed), "Dive" (a slingshot into an unprimed rock) or "Perfect"
+	-- (primed, then slingshot).
 	RockBroken: Signal.Signal,
 
 	-- (rock: Rock)
@@ -50,6 +52,23 @@ export type RunEvents = {
 	-- The ship launched a slingshot dive out of orbit, locked onto target (nil when nothing was ahead).
 	Slingshot: Signal.Signal,
 
+	-- (combo: number, move: string)
+	-- The combo changed. move is what changed it: a move that added to it ("Push", "Flare",
+	-- "Slingshot", or a RockBroken cause), or why it was lost ("Bump", "Impact", "Timeout"; combo is 0).
+	ComboChanged: Signal.Signal,
+
+	-- (rock: Rock)
+	-- A PERFECT: a primed rock broken by a slingshot. RockBroken fires for it too, just before.
+	Perfect: Signal.Signal,
+
+	-- (amount: number, cause: string)
+	-- A combo move repaired the planet by amount % (cause is the RockBroken cause).
+	Healed: Signal.Signal,
+
+	-- (amount: number)
+	-- Breaking a primed rock gave fuel back.
+	FuelRefunded: Signal.Signal,
+
 	-- (wave: number)
 	-- A wave began.
 	WaveStarted: Signal.Signal,
@@ -76,6 +95,10 @@ RunEvents.Names = table.freeze({
 	"OrbitLeft",
 	"OrbitCaptured",
 	"Slingshot",
+	"ComboChanged",
+	"Perfect",
+	"Healed",
+	"FuelRefunded",
 	"WaveStarted",
 	"WaveCleared",
 	"GameOver",

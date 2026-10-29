@@ -18,6 +18,7 @@
 ]]
 
 local Combat = require("../Combat/Combat")
+local Combo = require("../Combat/Combo")
 local Context = require("./Context")
 local Flight = require("../Ship/Flight")
 local PlanetHealth = require("../Combat/PlanetHealth")
@@ -60,6 +61,9 @@ export type Snapshot = {
 	Wave: number, -- 0 before the first wave starts
 	Phase: Phase,
 	Score: number,
+	Combo: number, -- the current chain (0 when there's none)
+	BestCombo: number, -- the highest the combo reached this run
+	Multiplier: number, -- score multiplier at the current combo
 	PlanetHp: number,
 	PlanetMaxHp: number,
 	Ship: Ship.Ship,
@@ -80,6 +84,7 @@ export type Run = typeof(setmetatable(
 		_ship: Ship.Ship,
 		_rocks: { Rock.Rock },
 		_ctx: Context.Context, -- handed to flight and combat; its rocks are kept in step with _rocks
+		_combo: Combo.Combo,
 		_nextRockId: number,
 		_director: WaveDirector.WaveDirector,
 		_score: number,
@@ -104,6 +109,7 @@ local function stepRocks(self: Run, dt: number)
 			local damage = rock.Type.DamagePercent
 			self.Events.PlanetHit:Fire(Rock.Snapshot(rock), damage)
 			self._planet:TakeDamage(damage)
+			Combo.Lose(self._combo, self.Events, "Impact")
 			if self._planet:IsDepleted() and not self._over then
 				self._over = true
 				self.Events.GameOver:Fire(self._director.Wave)
@@ -124,10 +130,11 @@ local function tick(self: Run, input: Input, dt: number)
 	if self._over then
 		return
 	end
-	local combat = Combat.Step(self._ship, self._rocks, self._tuning, self.Events)
+	local combat = Combat.Step(self._ship, self._ctx)
 	self._rocks = combat.survivors
 	self._ctx.rocks = combat.survivors
 	self._score += combat.score
+	Combo.Step(self._combo, self.Events, #self._rocks > 0, dt)
 	self._director:Step(dt, {
 		tuning = self._tuning,
 		events = self.Events,
@@ -143,17 +150,20 @@ function Run.new(setup: Setup?): Run
 	local tuning = Tuning.new(setup and setup.Tuning)
 	local events = RunEvents.new()
 	local rocks = {}
+	local planet = PlanetHealth.new(tuning.Arena.PlanetMaxHp)
+	local combo = Combo.new()
 	local self = setmetatable({
 		Events = events,
 		_tuning = tuning,
-		_planet = PlanetHealth.new(tuning.Arena.PlanetMaxHp),
+		_planet = planet,
 		_ship = Ship.new(
 			setup and setup.ShipStart or tuning.Arena.ShipStart,
 			tuning.Ship.FuelMax,
 			setup and setup.ShipHeading
 		),
 		_rocks = rocks,
-		_ctx = { tuning = tuning, events = events, rocks = rocks },
+		_ctx = { tuning = tuning, events = events, rocks = rocks, combo = combo, planet = planet },
+		_combo = combo,
 		_nextRockId = 1,
 		_director = WaveDirector.new(Rng.new(setup and setup.Seed or 1), setup and setup.Waves),
 		_score = 0,
@@ -195,6 +205,9 @@ function Run.Snapshot(self: Run): Snapshot
 		Wave = self._director.Wave,
 		Phase = (if self._over then "Over" else self._director.Phase) :: Phase,
 		Score = self._score,
+		Combo = self._combo.Count,
+		BestCombo = self._combo.Best,
+		Multiplier = Combo.Multiplier(self._combo, self._tuning),
 		PlanetHp = self._planet.Hp,
 		PlanetMaxHp = self._planet.MaxHp,
 		Ship = Ship.Snapshot(self._ship),

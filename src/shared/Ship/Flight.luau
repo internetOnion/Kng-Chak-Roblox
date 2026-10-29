@@ -12,6 +12,7 @@
 	slingshot speed and homes on the rock it locked onto.
 ]]
 
+local Combo = require("../Combat/Combo")
 local Context = require("../Run/Context")
 local Orbit = require("./Orbit")
 local Rock = require("../Rocks/Rock")
@@ -268,9 +269,11 @@ function Flight.Step(ship: Ship.Ship, ctx: Context.Context, input: RunInput.RunI
 	end
 	ship.Facing = direction(ship.Heading)
 
-	-- Fuel refills whenever the ship isn't boosting, faster in orbit
+	-- Fuel refills whenever the ship isn't boosting, faster in orbit and with a combo going
 	if ship.BoostTime <= 0 then
-		local regen = config.FuelRegen * (if ship.IsInOrbit then config.OrbitRegenMult else 1)
+		local regen = config.FuelRegen
+			* Combo.RegenMultiplier(ctx.combo, tuning)
+			* (if ship.IsInOrbit then config.OrbitRegenMult else 1)
 		ship.Fuel = math.min(config.FuelMax, ship.Fuel + regen * dt)
 	end
 
