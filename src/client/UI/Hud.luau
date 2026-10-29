@@ -1,6 +1,6 @@
 --!strict
 --[[
-	Hud: planet HP %, wave and score, readable at phone size.
+	Hud: planet HP %, wave, score and combo, readable at phone size.
 
 	    local hud = Hud.new(playerGui)
 	    hud:Update(run:Snapshot()) -- every frame
@@ -17,6 +17,7 @@ local Run = require(ReplicatedStorage.KngChak.Run.Run)
 local TEXT = Color3.fromHex("#ffffff")
 local LOW_HP = Color3.fromHex("#ff4d5e")
 local LOW_HP_AT = 30 -- HP % below which the HP readout turns red
+local COMBO = Color3.fromHex("#ffe066")
 
 local Hud = {}
 Hud.__index = Hud
@@ -27,6 +28,7 @@ export type Hud = typeof(setmetatable(
 		_hp: TextLabel,
 		_wave: TextLabel,
 		_score: TextLabel,
+		_combo: TextLabel,
 		_shown: { [string]: any },
 	},
 	Hud
@@ -72,8 +74,12 @@ function Hud.new(parent: Instance): Hud
 		_hp = label(gui, "Hp", Vector2.new(0, 0), UDim2.fromScale(0, 0), Enum.TextXAlignment.Left),
 		_wave = label(gui, "Wave", Vector2.new(0.5, 0), UDim2.fromScale(0.5, 0), Enum.TextXAlignment.Center),
 		_score = label(gui, "Score", Vector2.new(1, 0), UDim2.fromScale(1, 0), Enum.TextXAlignment.Right),
+		_combo = label(gui, "Combo", Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 34), Enum.TextXAlignment.Center),
 		_shown = {},
 	}, Hud)
+	self._combo.FontFace = Fonts.Display
+	self._combo.TextSize = 26
+	self._combo.TextColor3 = COMBO
 	self._wave.FontFace = Fonts.Display
 	self._wave.TextSize = 24
 	gui.Parent = parent
@@ -90,6 +96,12 @@ function Hud.Update(self: Hud, snapshot: Run.Snapshot)
 	if self._shown.wave ~= snapshot.Wave then
 		self._shown.wave = snapshot.Wave
 		self._wave.Text = if snapshot.Wave > 0 then `WAVE {snapshot.Wave}` else ""
+	end
+	if self._shown.combo ~= snapshot.Combo then
+		self._shown.combo = snapshot.Combo
+		self._combo.Text = if snapshot.Combo > 0
+			then `{snapshot.Combo} COMBO  ×{string.format("%.1f", snapshot.Multiplier)}`
+			else ""
 	end
 	local score = math.floor(snapshot.Score)
 	if self._shown.score ~= score then

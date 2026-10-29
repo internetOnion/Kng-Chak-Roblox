@@ -12,11 +12,13 @@
 ]]
 
 local ArenaConfig = require("../Data/ArenaConfig")
+local ComboConfig = require("../Data/ComboConfig")
 local ShipConfig = require("../Data/ShipConfig")
 local WaveConfig = require("../Data/WaveConfig")
 
 export type Tuning = {
 	Arena: ArenaConfig.ArenaConfig,
+	Combo: ComboConfig.ComboConfig,
 	Ship: ShipConfig.ShipConfig,
 	Waves: WaveConfig.WaveConfig,
 }
@@ -29,6 +31,7 @@ local Tuning = {}
 -- The data module behind each section.
 local sections: { [string]: { [string]: any } } = {
 	Arena = ArenaConfig :: any,
+	Combo = ComboConfig :: any,
 	Ship = ShipConfig :: any,
 	Waves = WaveConfig :: any,
 }

@@ -15,6 +15,7 @@
 	longer leaves, and only a boost (which costs fuel) gets it out.
 ]]
 
+local Combo = require("../Combat/Combo")
 local Context = require("../Run/Context")
 local Rock = require("../Rocks/Rock")
 local Ship = require("./Ship")
@@ -123,6 +124,7 @@ function Orbit.Slingshot(ship: Ship.Ship, ctx: Context.Context)
 	ship.IsSlingshotting = true
 	ship.Velocity = Vector2.new(math.cos(ship.Heading), math.sin(ship.Heading)) * config.SlingshotSpeed
 	ctx.events.Slingshot:Fire(if target then Rock.Snapshot(target) else nil)
+	Combo.Add(ctx.combo, ctx.tuning, ctx.events, ctx.tuning.Combo.SlingshotPoints, "Slingshot")
 end
 
 -- Moves the ship along the orbit for dt, steered toward `want` (radians) if set.
