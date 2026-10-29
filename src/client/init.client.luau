@@ -10,7 +10,8 @@ local RunService = game:GetService("RunService")
 -- Studio-only dev tools. Switch them on or off here; they never run in a live game.
 local DEV_TOOLS = {
 	EventLogger = true, -- prints every GameEvents event to Output
-	ContractsDemo = true, -- spawns one rock of each type and exercises the week-1 contracts
+	ContractsDemo = false, -- spawns one rock of each type and exercises the week-1 contracts
+	StylePrototype = true, -- PROTOTYPE (branch prototype/art-style only): three art-style tiles
 }
 
 if RunService:IsStudio() then
