@@ -33,18 +33,22 @@ local Tuning = require(KngChak.Run.Tuning)
 
 local Callouts = require(script.Parent.UI.Callouts)
 local CameraView = require(script.Parent.Views.CameraView)
+local Chevron = require(script.Parent.UI.Chevron)
 local DevBar = require(script.Parent.Dev.DevBar)
 local Device = require(script.Parent.Device)
+local FuelArc = require(script.Parent.UI.FuelArc)
 local Hud = require(script.Parent.UI.Hud)
 local Overlay = require(script.Parent.UI.Overlay)
 local PlanetView = require(script.Parent.Views.PlanetView)
 local PlayerInput = require(script.Parent.Input.PlayerInput)
+local Radar = require(script.Parent.UI.Radar)
 local RingsView = require(script.Parent.Views.RingsView)
 local RockView = require(script.Parent.Views.RockView)
 local ShieldView = require(script.Parent.Views.ShieldView)
 local ShipView = require(script.Parent.Views.ShipView)
 local Stage = require(script.Parent.Views.Stage)
 local StyleTile = require(script.Parent.Dev.StyleTile)
+local ThreatView = require(script.Parent.Views.ThreatView)
 local TuningPanel = require(script.Parent.Dev.TuningPanel)
 
 local DUMP_KEY = Enum.KeyCode.F7 -- Studio only: print the current run's recording
@@ -60,6 +64,7 @@ type Session = {
 	rocks: RockView.RockView,
 	shield: ShieldView.ShieldView,
 	ship: ShipView.ShipView,
+	threats: ThreatView.ThreatView,
 }
 
 type State = "Start" | "Playing" | "Over"
@@ -102,6 +107,7 @@ local function newSession(overrides: Tuning.Overrides?): Session
 		rocks = RockView.new(folder),
 		shield = ShieldView.new(folder),
 		ship = ShipView.new(folder),
+		threats = ThreatView.new(folder),
 	}
 end
 
@@ -119,6 +125,17 @@ return function()
 	local hud = Hud.new(playerGui)
 	local callouts = Callouts.new(playerGui)
 	callouts:Listen(GameEvents)
+	local radar = Radar.new(playerGui)
+	local chevron = Chevron.new(playerGui)
+	local fuelArc = FuelArc.new(playerGui)
+	fuelArc:Listen(GameEvents)
+	-- everything drawn over the arena during play
+	local function showPlayUi(visible: boolean)
+		hud:SetVisible(visible)
+		radar:SetVisible(visible)
+		chevron:SetVisible(visible)
+		fuelArc:SetVisible(visible)
+	end
 	local overlay = Overlay.new(playerGui)
 	local controls = PlayerInput.new(playerGui)
 	local camera = CameraView.new()
@@ -136,7 +153,7 @@ return function()
 		controls:Reset()
 		state = "Playing"
 		overlay:Hide()
-		hud:SetVisible(true)
+		showPlayUi(true)
 	end
 
 	local function restart()
@@ -194,7 +211,7 @@ return function()
 					else
 						shown:Hide()
 					end
-					hud:SetVisible(state == "Playing" and not showingTile)
+					showPlayUi(state == "Playing" and not showingTile)
 					overlay:SetSuppressed(showingTile)
 					controls:Reset()
 				end,
@@ -202,7 +219,7 @@ return function()
 		})
 	end
 
-	hud:SetVisible(false)
+	showPlayUi(false)
 	overlay:Show("KNG CHAK", "Defend the planet.\nTap to start", play)
 
 	RunService.RenderStepped:Connect(function(dt: number)
@@ -219,7 +236,7 @@ return function()
 
 		if state == "Playing" and snapshot.Phase == "Over" then
 			state = "Over"
-			hud:SetVisible(false)
+			showPlayUi(false)
 			overlay:Show(
 				"PLANET LOST",
 				`Wave {snapshot.Wave} · Score {math.floor(snapshot.Score)}\nTap to play again`,
@@ -237,6 +254,14 @@ return function()
 		session.ship:Update(snapshot.Ship)
 		session.rocks:Update(snapshot.Rocks)
 		session.shield:Update(snapshot.PlanetShield, snapshot.PlanetMaxShield, arena)
+		local now = os.clock()
+		session.threats:Update(snapshot, arena, now)
+		if not showingTile then
+			local focus, viewHalf = camera:View()
+			radar:Update(snapshot, arena, focus, viewHalf, now)
+			chevron:Update(snapshot, arena.PlanetRadius, now)
+			fuelArc:Update(snapshot, session.run:GetTuning().Ship, now)
+		end
 		hud:Update(snapshot)
 	end)
 end

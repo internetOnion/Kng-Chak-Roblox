@@ -29,6 +29,8 @@ export type CameraView = typeof(setmetatable(
 	{} :: {
 		_target: Vector2?,
 		_offset: Vector2, -- what's left of a jump, decaying to zero
+		_focus: Vector2, -- where it looks now
+		_viewHalf: Vector2, -- half the visible play plane, in arena units
 	},
 	CameraView
 ))
@@ -36,7 +38,10 @@ export type CameraView = typeof(setmetatable(
 function CameraView.new(): CameraView
 	local camera = workspace.CurrentCamera
 	camera.CameraType = Enum.CameraType.Scriptable
-	return setmetatable({ _target = nil, _offset = Vector2.zero }, CameraView)
+	return setmetatable(
+		{ _target = nil, _offset = Vector2.zero, _focus = Vector2.zero, _viewHalf = Vector2.one },
+		CameraView
+	)
 end
 
 function CameraView.Update(self: CameraView, shipPosition: Vector2, arena: ArenaConfig.ArenaConfig, dt: number)
@@ -46,7 +51,9 @@ function CameraView.Update(self: CameraView, shipPosition: Vector2, arena: Arena
 
 	local viewport = camera.ViewportSize
 	local aspect = if viewport.Y > 0 then viewport.X / viewport.Y else 16 / 9
-	local target = ViewMath.CameraFocus(arena, shipPosition, ViewMath.ViewHalf(arena, aspect))
+	local viewHalf = ViewMath.ViewHalf(arena, aspect)
+	local target = ViewMath.CameraFocus(arena, shipPosition, viewHalf)
+	self._viewHalf = viewHalf
 
 	local last = self._target
 	if last and (target - last).Magnitude > JUMP then
@@ -54,7 +61,13 @@ function CameraView.Update(self: CameraView, shipPosition: Vector2, arena: Arena
 	end
 	self._target = target
 	self._offset *= math.exp(-arena.CamSettle * dt)
-	CameraView.LookAt(self, target + self._offset, arena)
+	self._focus = target + self._offset
+	CameraView.LookAt(self, self._focus, arena)
+end
+
+-- What's on screen: the arena position at its centre and half its size, in arena units (for the radar).
+function CameraView.View(self: CameraView): (Vector2, Vector2)
+	return self._focus, self._viewHalf
 end
 
 -- Points the camera straight at an arena position, at the game's zoom, field of view and tilt.
