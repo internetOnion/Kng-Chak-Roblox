@@ -1,9 +1,17 @@
+--!strict
 --[[
 	Client entry point. The game runs here, on the player's device: flight, rocks,
 	combat and UI all live on the client, and the server stays thin.
 ]]
 
+local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+
+local Device = require(script.Device)
+
+-- Lock phone orientation to horizontal and strip CoreGui chrome before loading the game.
+local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui") :: PlayerGui
+Device.Setup(playerGui)
 
 -- Studio-only dev tools. Switch them on or off here; they never run in a live game.
 local DEV_TOOLS = {
