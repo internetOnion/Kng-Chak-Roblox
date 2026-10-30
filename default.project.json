@@ -20,11 +20,21 @@
         "$path": "src/server"
       }
     },
+    "StarterGui": {
+      "$properties": {
+        "ScreenOrientation": "LandscapeSensor"
+      }
+    },
     "StarterPlayer": {
       "StarterPlayerScripts": {
         "Client": {
           "$path": "src/client"
         }
+      }
+    },
+    "VoiceChatService": {
+      "$properties": {
+        "EnableDefaultVoice": false
       }
     }
   }
