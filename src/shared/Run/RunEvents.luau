@@ -120,10 +120,6 @@ export type RunEvents = {
 	-- A PERFECT got through to the Inferno's core without cracking it open yet. Perfect fires next.
 	CoreCracked: Signal.Signal,
 
-	-- (step: number, name: string)
-	-- A step of the guided first call began ("Move", "Boost", "PushBreak", "Slingshot").
-	GuidedStep: Signal.Signal,
-
 	-- (wave: number)
 	-- Planet HP reached 0 during this wave.
 	GameOver: Signal.Signal,
@@ -162,7 +158,6 @@ RunEvents.Names = table.freeze({
 	"BossPhaseChanged",
 	"BossHit",
 	"CoreCracked",
-	"GuidedStep",
 	"GameOver",
 	"RunFinished",
 })

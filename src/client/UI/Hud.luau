@@ -1,8 +1,7 @@
 --!strict
 --[[
-	Hud: planet HP % (and shield), wave, score and combo, readable at phone size.
-	During the Inferno the wave readout names it, with its plates or core left and
-	the seconds until it reaches the planet.
+	Hud: planet HP % (and shield), wave/boss status, score and combo, readable at phone size.
+	Kept inside a compact 2-row top strip (<= 54 px) so wave/boss banners below never touch it.
 
 	    local hud = Hud.new(playerGui)
 	    hud:Update(run:Snapshot()) -- every frame
@@ -32,7 +31,6 @@ export type Hud = typeof(setmetatable(
 		_wave: TextLabel,
 		_score: TextLabel,
 		_combo: TextLabel,
-		_boss: TextLabel,
 		_shown: { [string]: any },
 	},
 	Hud
@@ -43,19 +41,20 @@ local function label(
 	name: string,
 	anchor: Vector2,
 	position: UDim2,
+	size: UDim2,
 	align: Enum.TextXAlignment
 ): TextLabel
 	local text = Instance.new("TextLabel")
 	text.Name = name
 	text.AnchorPoint = anchor
 	text.Position = position
-	text.Size = UDim2.fromOffset(220, 44)
+	text.Size = size
 	text.BackgroundTransparency = 1
 	text.FontFace = Fonts.TextBold
-	text.TextSize = 30
+	text.TextSize = 28
 	text.TextColor3 = TEXT
 	text.TextXAlignment = align
-	text.TextStrokeTransparency = 0.4
+	text.TextStrokeTransparency = 0.35
 	text.Parent = parent
 	return text
 end
@@ -75,21 +74,45 @@ function Hud.new(parent: Instance): Hud
 
 	local self = setmetatable({
 		_gui = gui,
-		_hp = label(gui, "Hp", Vector2.new(0, 0), UDim2.fromScale(0, 0), Enum.TextXAlignment.Left),
-		_wave = label(gui, "Wave", Vector2.new(0.5, 0), UDim2.fromScale(0.5, 0), Enum.TextXAlignment.Center),
-		_score = label(gui, "Score", Vector2.new(1, 0), UDim2.fromScale(1, 0), Enum.TextXAlignment.Right),
-		_combo = label(gui, "Combo", Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 34), Enum.TextXAlignment.Center),
-		_boss = label(gui, "Boss", Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 64), Enum.TextXAlignment.Center),
+		_hp = label(
+			gui,
+			"Hp",
+			Vector2.new(0, 0),
+			UDim2.fromScale(0, 0),
+			UDim2.fromOffset(210, 34),
+			Enum.TextXAlignment.Left
+		),
+		_wave = label(
+			gui,
+			"Wave",
+			Vector2.new(0.5, 0),
+			UDim2.fromScale(0.5, 0),
+			UDim2.fromOffset(440, 28),
+			Enum.TextXAlignment.Center
+		),
+		_score = label(
+			gui,
+			"Score",
+			Vector2.new(1, 0),
+			UDim2.fromScale(1, 0),
+			UDim2.fromOffset(210, 34),
+			Enum.TextXAlignment.Right
+		),
+		_combo = label(
+			gui,
+			"Combo",
+			Vector2.new(0.5, 0),
+			UDim2.new(0.5, 0, 0, 28),
+			UDim2.fromOffset(280, 24),
+			Enum.TextXAlignment.Center
+		),
 		_shown = {},
 	}, Hud)
-	self._boss.TextSize = 22
-	self._boss.Size = UDim2.fromOffset(420, 32)
-	self._boss.TextColor3 = BOSS
-	self._combo.FontFace = Fonts.Display
-	self._combo.TextSize = 26
-	self._combo.TextColor3 = COMBO
 	self._wave.FontFace = Fonts.Display
-	self._wave.TextSize = 24
+	self._wave.TextSize = 22
+	self._combo.FontFace = Fonts.Display
+	self._combo.TextSize = 20
+	self._combo.TextColor3 = COMBO
 	gui.Parent = parent
 	return self
 end
@@ -103,32 +126,32 @@ function Hud.Update(self: Hud, snapshot: Run.Snapshot)
 		self._hp.Text = if shield > 0 then `HP {hp}% +{shield}` else `HP {hp}%`
 		self._hp.TextColor3 = if hp < LOW_HP_AT then LOW_HP else TEXT
 	end
+
 	local boss = snapshot.Boss
-	local wave = if boss
-		then "INFERNO"
-		elseif snapshot.Wave > 0 then `WAVE {snapshot.Wave} / {snapshot.LastWave}`
-		else ""
-	if self._shown.wave ~= wave then
-		self._shown.wave = wave
-		self._wave.Text = wave
-	end
-	local bossText = ""
+	local wave = ""
+	local isBoss = boss ~= nil
 	if boss then
 		local seconds = math.ceil(boss.TimeToImpact)
-		bossText = if boss.Phase < 3
-			then `PLATES {boss.PlatesLeft}/{boss.Plates} · {seconds} s`
-			else `CORE {boss.CoreHits - boss.CoreHitsLeft}/{boss.CoreHits} PERFECTS · {seconds} s`
+		wave = if boss.Phase < 3
+			then `INFERNO · PLATES {boss.PlatesLeft}/{boss.Plates} · {seconds}s`
+			else `INFERNO · CORE {boss.CoreHits - boss.CoreHitsLeft}/{boss.CoreHits} · {seconds}s`
+	elseif snapshot.Wave > 0 then
+		wave = `WAVE {snapshot.Wave} / {snapshot.LastWave}`
 	end
-	if self._shown.boss ~= bossText then
-		self._shown.boss = bossText
-		self._boss.Text = bossText
+	if self._shown.wave ~= wave or self._shown.isBoss ~= isBoss then
+		self._shown.wave = wave
+		self._shown.isBoss = isBoss
+		self._wave.Text = wave
+		self._wave.TextColor3 = if isBoss then BOSS else TEXT
 	end
-	if self._shown.combo ~= snapshot.Combo then
-		self._shown.combo = snapshot.Combo
-		self._combo.Text = if snapshot.Combo > 0
-			then `{snapshot.Combo} COMBO  ×{string.format("%.1f", snapshot.Multiplier)}`
-			else ""
+
+	local mult = string.format("%.1f", snapshot.Multiplier)
+	local comboKey = `{snapshot.Combo}:{mult}`
+	if self._shown.combo ~= comboKey then
+		self._shown.combo = comboKey
+		self._combo.Text = if snapshot.Combo > 0 then `{snapshot.Combo} COMBO · ×{mult}` else ""
 	end
+
 	local score = math.floor(snapshot.Score)
 	if self._shown.score ~= score then
 		self._shown.score = score

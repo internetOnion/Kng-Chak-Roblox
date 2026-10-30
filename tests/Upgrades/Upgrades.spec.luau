@@ -381,6 +381,8 @@ describe("Upgrade data", function()
 		local tuning = run:GetTuning() :: any
 		for _, upgrade in Upgrades.List do
 			expect(table.find({ "Flame", "Spear", "Orbit", "Any" }, upgrade.Family) ~= nil).toBe(true)
+			expect(#upgrade.Stat > 0).toBe(true)
+			expect(#upgrade.Text > 0).toBe(true)
 			expect(upgrade.MaxStacks >= 1).toBe(true)
 			for _, effect in upgrade.Effects do
 				expect(type(tuning[effect.Section][effect.Key])).toBe("number")

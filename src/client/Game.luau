@@ -2,13 +2,13 @@
 --[[
 	Game: the game flow on this client, and the Run it plays.
 
-	Flow: Start (tap to start) -> the guided first call, the first time -> an
-	emergency call (12 waves, an upgrade pick after each, then the Inferno) ->
-	results, lost or won (tap to play again) -> a fresh call, as often as you
-	like, without stopping play mode. The pause button (or Esc, or Roblox's own
-	menu opening) pauses the call; the start screen can replay the guided call
-	once it's been done, and the guided call can then be skipped. Whether it's
-	been done lasts for this visit only until the saved profile (#50) keeps it.
+	Flow: Start (tap to start) -> the Controls & Core Moves card, the first time ->
+	an emergency call (12 waves, an upgrade pick after each, then the Inferno) ->
+	results, lost or won (tap to play again) -> a fresh call, as often as you like,
+	without stopping play mode. The pause button (or Esc, or Roblox's own menu
+	opening) pauses the call; both Start and Pause include a Controls button to
+	reopen the visual controls guide anytime. Whether it's been seen lasts for this
+	visit until the saved profile (#50) keeps it.
 
 	Each Run comes with its own views in a fresh Arena folder; a restart throws
 	both away. Each frame the input adapter turns the player's controls into the
@@ -40,15 +40,14 @@ local Tuning = require(KngChak.Run.Tuning)
 local WaveConfig = require(KngChak.Data.WaveConfig)
 
 local Banner = require(script.Parent.UI.Banner)
-local BeaconView = require(script.Parent.Views.BeaconView)
 local BossView = require(script.Parent.Views.BossView)
 local Callouts = require(script.Parent.UI.Callouts)
 local CameraView = require(script.Parent.Views.CameraView)
 local Chevron = require(script.Parent.UI.Chevron)
+local ControlsPanel = require(script.Parent.UI.ControlsPanel)
 local DevBar = require(script.Parent.Dev.DevBar)
 local Device = require(script.Parent.Device)
 local FuelArc = require(script.Parent.UI.FuelArc)
-local GhostThumb = require(script.Parent.UI.GhostThumb)
 local Hud = require(script.Parent.UI.Hud)
 local Overlay = require(script.Parent.UI.Overlay)
 local PauseButton = require(script.Parent.UI.PauseButton)
@@ -71,14 +70,13 @@ local ZOOMS = { 50, 35 } -- the CamView candidates the phone playtest compares (
 local SKY_HALF = Vector2.new(190, 140) -- the sky covers the arena plus a screen's width around it
 local WON = Color3.fromHex("#5ee05e")
 local LOST = Color3.fromHex("#ff4d5e")
+local CONTROLS_PILL = Color3.fromHex("#2f2d80")
 
 type Session = {
 	run: Run.Run,
-	mode: Run.Mode,
 	recorder: Replay.Recorder?, -- Studio only, so a long run on a phone doesn't keep every frame
 	log: { string },
 	folder: Folder,
-	beacon: BeaconView.BeaconView,
 	boss: BossView.BossView,
 	rings: RingsView.RingsView,
 	rocks: RockView.RockView,
@@ -106,27 +104,23 @@ local function combine(panel: Tuning.Overrides?, zoom: number?): Tuning.Override
 	return out
 end
 
--- A new Run in `mode` and its views, with the given tuning overrides (if any).
+-- A new Run and its views, with the given tuning overrides (if any).
 -- The seed is the only randomness the Run gets; it's picked here, outside it.
-local function newSession(mode: Run.Mode, overrides: Tuning.Overrides?, startWave: number?): Session
+local function newSession(overrides: Tuning.Overrides?, startWave: number?): Session
 	local folder = Instance.new("Folder")
 	folder.Name = "Arena"
 	folder.Parent = workspace
 
 	local seed = Random.new():NextInteger(1, 2 ^ 31 - 2)
-	local run = Run.new({ Seed = seed, Mode = mode, Tuning = overrides, StartWave = startWave })
+	local run = Run.new({ Seed = seed, Tuning = overrides, StartWave = startWave })
 	GameEvents.Follow(run.Events)
 
 	PlanetView.new(folder)
 	return {
 		run = run,
-		mode = mode,
-		recorder = if RunService:IsStudio() and not startWave
-			then Replay.Recorder.new(seed, if mode == "Call" then nil else mode)
-			else nil,
+		recorder = if RunService:IsStudio() and not startWave then Replay.Recorder.new(seed) else nil,
 		log = Replay.Log(run),
 		folder = folder,
-		beacon = BeaconView.new(folder),
 		boss = BossView.new(folder),
 		rings = RingsView.new(folder),
 		rocks = RockView.new(folder),
@@ -172,10 +166,10 @@ return function()
 	local chevron = Chevron.new(playerGui)
 	local fuelArc = FuelArc.new(playerGui)
 	fuelArc:Listen(GameEvents)
-	local ghost = GhostThumb.new(playerGui)
 	local sounds = SoundPlayer.new()
 	sounds:Listen(GameEvents)
 	local overlay = Overlay.new(playerGui)
+	local controlsPanel = ControlsPanel.new(playerGui)
 	local controls = PlayerInput.new(playerGui)
 	local camera = CameraView.new()
 
@@ -184,10 +178,10 @@ return function()
 	local function overrides(): Tuning.Overrides?
 		return combine(panelOverrides, zoom)
 	end
-	local session = newSession("Call")
+	local session = newSession()
 	local snapshot = session.run:Snapshot()
 	local state: State = "Start"
-	local guidedDone = false -- whether this player has finished the guided call (this visit)
+	local seenControls = false -- whether this player has seen the controls card (this visit)
 	local pauseButton: PauseButton.PauseButton
 
 	-- everything drawn over the arena during play
@@ -196,17 +190,17 @@ return function()
 		radar:SetVisible(visible)
 		chevron:SetVisible(visible)
 		fuelArc:SetVisible(visible)
-		ghost:SetVisible(visible)
 		pauseButton:SetVisible(visible)
+		banner:SetVisible(visible)
+		callouts:SetVisible(visible)
 	end
 
-	local startCall: () -> ()
-	local function begin(mode: Run.Mode, startWave: number?)
+	local function begin(startWave: number?)
 		endSession(session)
-		-- after the first time the guided call can be skipped
-		pauseButton:SetSkip(if mode == "Guided" and guidedDone then startCall else nil)
 		banner:Clear()
-		session = newSession(mode, overrides(), startWave)
+		callouts:Clear()
+		controlsPanel:Hide()
+		session = newSession(overrides(), startWave)
 		snapshot = session.run:Snapshot()
 		controls:Reset()
 		state = "Playing"
@@ -214,23 +208,38 @@ return function()
 		showPlayUi(true)
 	end
 
-	function startCall()
-		begin("Call")
+	local function startCall()
+		begin()
 	end
 
-	local function startGuided()
-		begin("Guided")
-	end
+	local showStart: () -> ()
+	local showPause: () -> ()
 
 	local function resume()
 		if state ~= "Paused" then
 			return
 		end
+		controlsPanel:Hide()
 		state = "Playing"
 		session.run:SetPaused(false)
 		controls:Reset()
 		overlay:Hide()
 		showPlayUi(true)
+	end
+
+	function showPause()
+		local extras: { Overlay.Extra } = {
+			{
+				Text = "Controls",
+				Color = CONTROLS_PILL,
+				OnTap = function()
+					overlay:Hide()
+					controlsPanel:Show("GOT IT", showPause)
+				end,
+			},
+			{ Text = "Restart call", OnTap = startCall },
+		}
+		overlay:Show("PAUSED", "Tap to resume", resume, extras)
 	end
 
 	local function pause()
@@ -240,14 +249,15 @@ return function()
 		state = "Paused"
 		session.run:SetPaused(true)
 		showPlayUi(false)
-		local restart = if session.mode == "Guided" then "Start wave 1" else "Restart call"
-		overlay:Show("PAUSED", "Tap to resume", resume, { Text = restart, OnTap = startCall })
+		showPause()
 	end
 
 	local function toggle()
-		if state == "Paused" then
+		if controlsPanel:IsOpen() then
+			controlsPanel:Close()
+		elseif state == "Paused" then
 			resume()
-		else
+		elseif state == "Playing" then
 			pause()
 		end
 	end
@@ -266,15 +276,34 @@ return function()
 		controls:Reset()
 	end)
 
-	local function showStart()
+	function showStart()
 		state = "Start"
 		showPlayUi(false)
 		local body = "Defend the planet.\nTap to start"
-		if guidedDone then
-			overlay:Show("KNG CHAK", body, startCall, { Text = "How to fly", OnTap = startGuided })
-		else
-			overlay:Show("KNG CHAK", body, startGuided)
+		local function onPrimaryTap()
+			if seenControls then
+				startCall()
+			else
+				overlay:Hide()
+				controlsPanel:Show("START CALL", function()
+					seenControls = true
+					startCall()
+				end)
+			end
 		end
+		overlay:Show("KNG CHAK", body, onPrimaryTap, {
+			{
+				Text = "Controls",
+				Color = CONTROLS_PILL,
+				OnTap = function()
+					overlay:Hide()
+					controlsPanel:Show("GOT IT", function()
+						seenControls = true
+						showStart()
+					end)
+				end,
+			},
+		})
 	end
 
 	if RunService:IsStudio() then
@@ -327,6 +356,7 @@ return function()
 					end
 					showPlayUi(state == "Playing" and not showingTile)
 					overlay:SetSuppressed(showingTile)
+					controlsPanel:SetSuppressed(showingTile)
 					controls:Reset()
 				end,
 			},
@@ -336,7 +366,7 @@ return function()
 					return "Inferno"
 				end,
 				onClick = function()
-					begin("Call", WaveConfig.LastWave + 1) -- past the last wave: the Inferno at once
+					begin(WaveConfig.LastWave + 1) -- past the last wave: the Inferno at once
 				end,
 			},
 		})
@@ -357,16 +387,22 @@ return function()
 		snapshot = session.run:Snapshot()
 
 		if state == "Playing" and (snapshot.Phase == "Over" or snapshot.Phase == "Won") then
-			if session.mode == "Guided" then
-				guidedDone = true
-				startCall() -- then wave 1 starts
-				snapshot = session.run:Snapshot()
-			else
-				state = "Finished"
-				showPlayUi(false)
-				local title, body, color = results(session.run:Summary())
-				overlay:Show(title, body, startCall, nil, color)
+			state = "Finished"
+			showPlayUi(false)
+			local title, body, color = results(session.run:Summary())
+			local function showResults()
+				overlay:Show(title, body, startCall, {
+					{
+						Text = "Controls",
+						Color = CONTROLS_PILL,
+						OnTap = function()
+							overlay:Hide()
+							controlsPanel:Show("GOT IT", showResults)
+						end,
+					},
+				}, color)
 			end
+			showResults()
 		end
 
 		local tuning = session.run:GetTuning()
@@ -381,7 +417,6 @@ return function()
 		session.ship:Update(snapshot.Ship)
 		session.rocks:Update(snapshot.Rocks)
 		session.boss:Update(snapshot.Boss, tuning.Inferno)
-		session.beacon:Update(snapshot.Guided and snapshot.Guided.Beacon, now)
 		session.shield:Update(snapshot.PlanetShield, snapshot.PlanetMaxShield, arena)
 		session.threats:Update(snapshot, arena, now)
 		if not showingTile then
@@ -389,12 +424,15 @@ return function()
 			radar:Update(snapshot, arena, focus, viewHalf, now)
 			chevron:Update(snapshot, arena.PlanetRadius, now)
 			fuelArc:Update(snapshot, tuning.Ship, now)
-			ghost:Update(snapshot, now)
+			callouts:Update(snapshot, now)
 		end
 		hud:Update(snapshot)
+		controlsPanel:Update(now)
 		local playing = state == "Playing" and not showingTile
-		cards:Update(snapshot, playing)
-		banner:SetVisible(playing and snapshot.Phase ~= "UpgradePick") -- the cards take the screen
-		sounds:UpdateEngine(snapshot.Ship, state == "Playing" and not showingTile, dt)
+		local inArena = playing and snapshot.Phase ~= "UpgradePick"
+		cards:Update(snapshot, playing, now, tuning.Waves.SurgeHeal)
+		banner:SetVisible(inArena) -- the cards take the screen
+		callouts:SetVisible(inArena)
+		sounds:UpdateEngine(snapshot.Ship, playing, dt)
 	end)
 end

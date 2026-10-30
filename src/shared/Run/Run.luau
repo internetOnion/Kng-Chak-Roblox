@@ -16,8 +16,6 @@
 	A call is waves 1 to WaveConfig.LastWave, an upgrade pick after each, then the
 	Inferno (see Boss/Inferno). It's won when the Inferno's core cracks and lost
 	when planet HP reaches 0; either way RunFinished fires with the run's summary.
-	A guided call (Mode "Guided", see Run/Guided) teaches the moves instead, with a
-	planet that can't be damaged.
 
 	The Run holds the game rules. It knows nothing about Parts, cameras or GUIs and
 	creates no Instances: views read its snapshot and events and never change it.
@@ -30,8 +28,6 @@ local Combo = require("../Combat/Combo")
 local Context = require("./Context")
 local Deck = require("../Upgrades/Deck")
 local Flight = require("../Ship/Flight")
-local Guided = require("./Guided")
-local GuidedConfig = require("../Data/GuidedConfig")
 local Inferno = require("../Boss/Inferno")
 local PlanetHealth = require("../Combat/PlanetHealth")
 local Rng = require("../Util/Rng")
@@ -62,8 +58,8 @@ export type RockSetup = {
 
 export type WavePlan = WaveDirector.WavePlan
 
--- "Call": an emergency call (waves, then the Inferno). "Guided": the guided first call.
-export type Mode = "Call" | "Guided"
+-- "Call": an emergency call (waves, then the Inferno).
+export type Mode = "Call"
 
 -- Playing a wave, between waves, picking an upgrade, fighting the Inferno, or finished.
 export type Phase = "Playing" | "Breather" | "UpgradePick" | "Boss" | "Won" | "Over"
@@ -107,14 +103,6 @@ export type BossSnapshot = {
 	TimeToImpact: number, -- seconds, at this phase's speed
 }
 
-export type GuidedSnapshot = {
-	Step: number,
-	StepName: string?, -- "Move", "Boost", "PushBreak" or "Slingshot"; nil once done
-	Steps: number,
-	Beacon: Vector2?,
-	DummyId: number?,
-}
-
 -- What other code may read. Rebuilt on every Snapshot() call; changing it changes nothing.
 export type Snapshot = {
 	Mode: Mode,
@@ -140,7 +128,6 @@ export type Snapshot = {
 	Offer: { string }?, -- upgrade ids on offer, while Phase is "UpgradePick"
 	Upgrades: { [string]: number }, -- upgrades picked so far: id -> stacks
 	Boss: BossSnapshot?,
-	Guided: GuidedSnapshot?,
 	Time: number, -- seconds of play
 }
 
@@ -174,7 +161,6 @@ export type Run = typeof(setmetatable(
 		_offerRng: Rng.Rng,
 		_offer: { string }?,
 		_handledWave: number, -- the last cleared wave whose surge heal and offer are dealt with
-		_guide: Guided.Guided?,
 		_score: number,
 		_perfects: number,
 		_time: number,
@@ -262,11 +248,9 @@ local function stepRocks(self: Run, dt: number)
 	for _, rock in self._rocks do
 		Rock.Fall(rock, self._tuning, dt)
 		if Rock.TouchesPlanet(rock, planetRadius) then
-			if self._mode ~= "Guided" then -- the guided call's planet can't be damaged
-				local damage = rock.Type.DamagePercent
-				self.Events.PlanetHit:Fire(Rock.Snapshot(rock), damage)
-				damagePlanet(self, damage)
-			end
+			local damage = rock.Type.DamagePercent
+			self.Events.PlanetHit:Fire(Rock.Snapshot(rock), damage)
+			damagePlanet(self, damage)
 		else
 			table.insert(survivors, rock)
 		end
@@ -351,18 +335,6 @@ local function tick(self: Run, input: Input, dt: number)
 	self._score += combat.score
 	Combo.Step(self._combo, self.Events, #self._rocks > 0, dt)
 
-	local guide = self._guide
-	if guide then
-		local dummy = Guided.Step(guide, self._ship, self._ctx)
-		if dummy then
-			addRock(self, dummy)
-		end
-		if guide.IsDone then
-			finish(self, "Won")
-		end
-		return
-	end
-
 	local director = self._director
 	if director.Phase == "Cleared" and director.Wave > 0 and not self._offer then
 		director:Continue(directorContext(self)) -- no upgrade left to offer
@@ -380,26 +352,24 @@ end
 function Run.new(setup: Setup?): Run
 	local seed = setup and setup.Seed or 1
 	local mode: Mode = setup and setup.Mode or "Call"
-	local guided = mode == "Guided"
 	local overrides = setup and setup.Tuning
 	local upgrades = table.clone(setup and setup.Upgrades or {})
 	local tuning = Tuning.new(overrides, { Upgrades = upgrades })
 	local events = RunEvents.new()
 	local rocks = {}
-	local startHp = if guided then GuidedConfig.StartHp else nil
-	local planet = PlanetHealth.new(tuning.Arena.PlanetMaxHp, tuning.Arena.PlanetMaxShield, startHp)
+	local planet = PlanetHealth.new(tuning.Arena.PlanetMaxHp, tuning.Arena.PlanetMaxShield)
 	planet.ShieldChanged:Connect(function(shield: number, delta: number)
 		events.ShieldChanged:Fire(shield, delta)
 	end)
 
 	-- With the data's waves the call runs to LastWave, from StartWave; fixed waves play as given.
-	local fixed = if guided then {} else setup and setup.Waves
+	local fixed = setup and setup.Waves
 	local lastWave = if fixed then #fixed else tuning.Waves.LastWave
 	local director = WaveDirector.new(Rng.new(seed), fixed, if fixed then nil else lastWave)
 	if not fixed and setup and setup.StartWave then
 		director.Wave = setup.StartWave - 1
 	end
-	local bossEnabled = not guided and (if setup and setup.Boss ~= nil then setup.Boss else fixed == nil)
+	local bossEnabled = if setup and setup.Boss ~= nil then setup.Boss else fixed == nil
 
 	local combo = Combo.new()
 	local self = setmetatable({
@@ -426,11 +396,10 @@ function Run.new(setup: Setup?): Run
 		_boss = nil :: Inferno.Inferno?,
 		_bossRng = Rng.new(seed + BOSS_SEED_OFFSET),
 		_bossAngle = setup and setup.BossAngle,
-		_offers = not guided and (setup == nil or setup.Offers ~= false),
+		_offers = setup == nil or setup.Offers ~= false,
 		_offerRng = Rng.new(seed + UPGRADE_SEED_OFFSET),
 		_offer = nil :: { string }?,
 		_handledWave = director.Wave,
-		_guide = nil :: Guided.Guided?,
 		_score = 0,
 		_perfects = 0,
 		_time = 0,
@@ -459,9 +428,6 @@ function Run.new(setup: Setup?): Run
 	events.Perfect:Connect(function()
 		self._perfects += 1
 	end)
-	if guided then
-		self._guide = Guided.new(self._ctx)
-	end
 	local startRocks = setup and setup.Rocks
 	if startRocks then
 		for _, rock in startRocks do
@@ -528,7 +494,7 @@ local function phase(self: Run): Phase
 		return "UpgradePick"
 	elseif self._boss then
 		return "Boss"
-	elseif self._director.Phase == "Playing" or self._guide then
+	elseif self._director.Phase == "Playing" then
 		return "Playing"
 	end
 	return "Breather"
@@ -550,20 +516,6 @@ local function bossSnapshot(self: Run): BossSnapshot?
 		CoreHits = config.CoreHits,
 		IsHolding = boss.IsHolding,
 		TimeToImpact = Inferno.TimeToImpact(boss, self._ctx),
-	})
-end
-
-local function guidedSnapshot(self: Run): GuidedSnapshot?
-	local guide = self._guide
-	if not guide then
-		return nil
-	end
-	return table.freeze({
-		Step = guide.Step,
-		StepName = Guided.StepName(guide.Step),
-		Steps = #GuidedConfig.Steps,
-		Beacon = guide.Beacon,
-		DummyId = guide.DummyId,
 	})
 end
 
@@ -599,7 +551,6 @@ function Run.Snapshot(self: Run): Snapshot
 		Offer = self._offer,
 		Upgrades = table.freeze(table.clone(self._upgrades)),
 		Boss = bossSnapshot(self),
-		Guided = guidedSnapshot(self),
 		Time = self._time,
 	})
 end
