@@ -187,6 +187,16 @@ local function makePlus(parent: Instance, x: number, y: number, size: number, co
 	return holder
 end
 
+-- Positions a centre-anchored Frame as a ray starting at (x0, y0) along `deg` (GuiObject.Rotation always pivots around centre).
+local function placeRay(frame: Frame, x0: number, y0: number, length: number, thickness: number, deg: number)
+	local rad = math.rad(deg)
+	local midX = x0 + math.cos(rad) * length * 0.5
+	local midY = y0 + math.sin(rad) * length * 0.5
+	frame.Position = UDim2.fromOffset(midX, midY)
+	frame.Size = UDim2.fromOffset(length, thickness)
+	frame.Rotation = deg
+end
+
 local BUILDERS: { [string]: (stage: Frame) -> Animator } = {
 	-- 1. Long Hose: flame stretches past baseline to prime a distant rock
 	LongHose = function(stage: Frame): Animator
@@ -219,11 +229,9 @@ local BUILDERS: { [string]: (stage: Frame) -> Animator } = {
 
 	-- 2. Wide Nozzle: flame cone fans wider to prime two angled rocks
 	WideNozzle = function(stage: Frame): Animator
-		local topRay =
-			box(stage, UDim2.fromOffset(42, 55), UDim2.fromOffset(78, 16), FLAME_EDGE, 0.15, Vector2.new(0, 0.5))
+		local topRay = box(stage, UDim2.fromOffset(80, 55), UDim2.fromOffset(88, 16), FLAME_EDGE, 0.15)
 		round(topRay, UDim.new(0.5, 0))
-		local botRay =
-			box(stage, UDim2.fromOffset(42, 55), UDim2.fromOffset(78, 16), FLAME_EDGE, 0.15, Vector2.new(0, 0.5))
+		local botRay = box(stage, UDim2.fromOffset(80, 55), UDim2.fromOffset(88, 16), FLAME_EDGE, 0.15)
 		round(botRay, UDim.new(0.5, 0))
 		local midRay =
 			box(stage, UDim2.fromOffset(42, 55), UDim2.fromOffset(74, 18), FLAME_MID, 0.05, Vector2.new(0, 0.5))
@@ -237,9 +245,9 @@ local BUILDERS: { [string]: (stage: Frame) -> Animator } = {
 
 		return function(phase: number)
 			local spread = 0.5 + 0.5 * math.sin(phase * 2 * math.pi)
-			local angle = 10 + 18 * spread
-			topRay.Rotation = -angle
-			botRay.Rotation = angle
+			local angle = 6 + 13 * spread
+			placeRay(topRay, 42, 55, 88, 16, -angle)
+			placeRay(botRay, 42, 55, 88, 16, angle)
 			midRay.Size = UDim2.fromOffset(74, 16 + 12 * spread)
 			local hit = spread > 0.5
 			rockTop.BackgroundColor3 = if hit then PRIMED else ROCK_BROWN
@@ -393,29 +401,36 @@ local BUILDERS: { [string]: (stage: Frame) -> Animator } = {
 		end
 	end,
 
-	-- 8. Long Dive: fast blue slingshot streak launching rocket across the stage
+	-- 8. Long Dive: fast blue slingshot streak launching rocket tangentially across the stage
 	LongDive = function(stage: Frame): Animator
-		makePlanet(stage, 34, 80, 30)
-		local orbit = box(stage, UDim2.fromOffset(34, 80), UDim2.fromOffset(50, 50), ORBIT_CYAN, 1)
+		local cx, cy, r = 36, 70, 22
+		makePlanet(stage, cx, cy, 28)
+		local orbit = box(stage, UDim2.fromOffset(cx, cy), UDim2.fromOffset(r * 2, r * 2), ORBIT_CYAN, 1)
 		round(orbit, UDim.new(0.5, 0))
 		stroke(orbit, 2, ORBIT_CYAN, 0.35)
 
-		local streakOuter =
-			box(stage, UDim2.fromOffset(48, 68), UDim2.fromOffset(88, 12), DIVE_BLUE, 0.2, Vector2.new(0, 0.5))
-		streakOuter.Rotation = -28
+		local exitDeg = 55
+		local headingDeg = exitDeg - 90 -- -35° true tangent
+		local exitRad = math.rad(exitDeg)
+		local headRad = math.rad(headingDeg)
+		local exitX = cx + r * math.cos(exitRad)
+		local exitY = cy + r * math.sin(exitRad)
+		local dirX = math.cos(headRad)
+		local dirY = math.sin(headRad)
+
+		local streakOuter = box(stage, UDim2.fromOffset(exitX, exitY), UDim2.fromOffset(18, 12), DIVE_BLUE, 0.2)
 		round(streakOuter, UDim.new(0.5, 0))
-		local streakInner =
-			box(stage, UDim2.fromOffset(48, 68), UDim2.fromOffset(72, 6), DIVE_MID, 0.05, Vector2.new(0, 0.5))
-		streakInner.Rotation = -28
+		local streakInner = box(stage, UDim2.fromOffset(exitX, exitY), UDim2.fromOffset(12, 6), DIVE_MID, 0.05)
 		round(streakInner, UDim.new(0.5, 0))
 
-		local rocket = makeRocket(stage, 60, 62, -28, 0.9, true)
+		local rocket = makeRocket(stage, exitX, exitY, headingDeg, 0.88, true)
 
 		return function(phase: number)
-			local dash = 1 - (1 - math.clamp(phase / 0.65, 0, 1)) ^ 3
-			streakOuter.Size = UDim2.fromOffset(18 + 86 * dash, 12)
-			streakInner.Size = UDim2.fromOffset(12 + 74 * dash, 6)
-			rocket.Position = UDim2.fromOffset(52 + 88 * dash, 66 - 46 * dash)
+			local dash = 1 - (1 - math.clamp(phase / 0.72, 0, 1)) ^ 3
+			local dist = 10 + 92 * dash
+			placeRay(streakOuter, exitX, exitY, math.max(8, dist - 4), 12, headingDeg)
+			placeRay(streakInner, exitX + 3 * dirX, exitY + 3 * dirY, math.max(6, (dist - 8) * 0.88), 6, headingDeg)
+			rocket.Position = UDim2.fromOffset(exitX + dist * dirX, exitY + dist * dirY)
 		end
 	end,
 
@@ -425,23 +440,33 @@ local BUILDERS: { [string]: (stage: Frame) -> Animator } = {
 		round(healGlow, UDim.new(0.5, 0))
 		makePlanet(stage, 54, 64, 42)
 
-		local streak =
-			box(stage, UDim2.fromOffset(88, 50), UDim2.fromOffset(46, 8), DIVE_MID, 0.15, Vector2.new(0, 0.5))
-		streak.Rotation = -25
+		local startX, startY = 84, 55
+		local headingDeg = -27
+		local headRad = math.rad(headingDeg)
+		local dirX = math.cos(headRad)
+		local dirY = math.sin(headRad)
+
+		local streak = box(stage, UDim2.fromOffset(startX, startY), UDim2.fromOffset(20, 8), DIVE_MID, 0.15)
 		round(streak, UDim.new(0.5, 0))
 		local rock = box(stage, UDim2.fromOffset(138, 28), UDim2.fromOffset(20, 20), PRIMED, 0)
 		round(rock, UDim.new(0.5, 0))
 		stroke(rock, 2.5, PRIMED)
+		local rocket = makeRocket(stage, startX, startY, headingDeg, 0.78, true)
 
 		local plusA = makePlus(stage, 40, 28, 15, PLANET_LAND)
 		local plusB = makePlus(stage, 70, 22, 13, GOLD)
 
 		return function(phase: number)
 			local strike = math.clamp(phase / 0.35, 0, 1)
-			streak.Size = UDim2.fromOffset(12 + 40 * strike, 8)
-			rock.Visible = phase < 0.38
-			local healPhase = math.clamp((phase - 0.3) / 0.65, 0, 1)
-			local showHeal = phase >= 0.3
+			local diving = phase < 0.42
+			local dist = 48 * strike
+			streak.Visible = diving
+			rocket.Visible = phase < 0.5
+			placeRay(streak, startX, startY, math.max(6, dist - 4), 8, headingDeg)
+			rocket.Position = UDim2.fromOffset(startX + dist * dirX, startY + dist * dirY)
+			rock.Visible = phase < 0.36
+			local healPhase = math.clamp((phase - 0.32) / 0.62, 0, 1)
+			local showHeal = phase >= 0.32
 			plusA.Visible = showHeal
 			plusB.Visible = showHeal
 			plusA.Position = UDim2.fromOffset(38, 38 - 18 * healPhase)

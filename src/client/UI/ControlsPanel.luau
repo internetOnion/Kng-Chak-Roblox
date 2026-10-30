@@ -42,6 +42,11 @@ local DIVE_BLUE = Color3.fromHex("#2f7dff")
 local PLANET_OCEAN = Color3.fromHex("#2fc4ff")
 local PLANET_LAND = Color3.fromHex("#5ee05e")
 local PERIOD = 1.8
+local SLINGSHOT_PERIOD = 2.4
+local ORBIT_CENTER = Vector2.new(30, 58)
+local ORBIT_RADIUS = 20
+local DIVE_EXIT_DEG = 30
+local DIVE_HEADING_DEG = DIVE_EXIT_DEG - 90 -- -60°, true counter-clockwise tangent at 30°
 
 type MiniShip = {
 	root: Frame,
@@ -91,9 +96,12 @@ export type ControlsPanel = typeof(setmetatable(
 		_breakShip: MiniShip,
 		_breakRock: Frame,
 		_breakHeal: Frame,
+		_orbitStroke: UIStroke,
 		_diveStreak: Frame,
-		_diveShip: Frame,
+		_diveStreakCore: Frame,
+		_diveShip: MiniShip,
 		_diveRock: Frame,
+		_divePlus: Frame,
 		_diveHeal: TextLabel,
 	},
 	ControlsPanel
@@ -210,13 +218,25 @@ local function makeMiniShip(parent: Instance, pos: UDim2, scale: number): MiniSh
 	}
 end
 
-local function setShipBoost(ship: MiniShip, boosting: boolean, flameLen: number)
+local function setShipBoost(ship: MiniShip, boosting: boolean, flameLen: number, slingshot: boolean?)
 	ship.helmet.Visible = not boosting
 	ship.spear.Visible = boosting
-	ship.flameEdge.BackgroundColor3 = if boosting then BOOST_EDGE else FLAME_EDGE
-	ship.flameMid.BackgroundColor3 = if boosting then BOOST_MID else FLAME_MID
+	local edgeColor = if slingshot then DIVE_BLUE elseif boosting then BOOST_EDGE else FLAME_EDGE
+	local midColor = if slingshot then ORBIT_CYAN elseif boosting then BOOST_MID else FLAME_MID
+	ship.flameEdge.BackgroundColor3 = edgeColor
+	ship.flameMid.BackgroundColor3 = midColor
 	ship.flameEdge.Size = UDim2.fromOffset(flameLen, if boosting then 12 else 9)
 	ship.flameMid.Size = UDim2.fromOffset(math.round(flameLen * 0.65), if boosting then 7 else 5)
+end
+
+-- Positions a centre-anchored Frame as a ray starting at (x0, y0) along `deg` (GuiObject.Rotation always pivots around centre).
+local function placeRay(frame: Frame, x0: number, y0: number, length: number, thickness: number, deg: number)
+	local rad = math.rad(deg)
+	local midX = x0 + math.cos(rad) * length * 0.5
+	local midY = y0 + math.sin(rad) * length * 0.5
+	frame.Position = UDim2.fromOffset(midX, midY)
+	frame.Size = UDim2.fromOffset(length, thickness)
+	frame.Rotation = deg
 end
 
 -- Crisp geometric "+" icon built from two rounded bars (no unicode stand-ins).
@@ -454,9 +474,9 @@ function ControlsPanel.new(parent: Instance): ControlsPanel
 		stage.ClipsDescendants = true
 
 		local t =
-			makeText(tile, "Title", Fonts.Display, 19, titleColor, UDim2.fromOffset(108, 14), UDim2.fromOffset(110, 24))
+			makeText(tile, "Title", Fonts.Display, 19, titleColor, UDim2.fromOffset(108, 13), UDim2.fromOffset(110, 24))
 		t.Text = titleText
-		local b = makeText(tile, "Body", Fonts.Text, 14, SUBTEXT, UDim2.fromOffset(108, 40), UDim2.fromOffset(110, 56))
+		local b = makeText(tile, "Body", Fonts.Text, 13, SUBTEXT, UDim2.fromOffset(108, 39), UDim2.fromOffset(110, 58))
 		b.Text = bodyText
 		return stage
 	end
@@ -492,61 +512,84 @@ function ControlsPanel.new(parent: Instance): ControlsPanel
 	setShipBoost(breakShip, true, 14)
 	local breakHeal = makePlus(breakStage, UDim2.fromOffset(66, 22), 14, PLANET_LAND)
 
-	-- Move 3: SLINGSHOT (orbit around planet -> blue dive into pink rock -> +6%)
-	local diveStage = moveCard(3, "SLINGSHOT", ORBIT_CYAN, "Orbit refills fuel.\nAim out for +6%")
+	-- Move 3: SLINGSHOT (skim planet onto cyan orbit -> launch blue spear dive into pink rock -> +6%)
+	local diveStage = moveCard(3, "SLINGSHOT", ORBIT_CYAN, "Skim planet, then\naim out to dive\npink rocks (+6%)")
 	local orbitRing = box(
 		diveStage,
 		"Orbit",
-		UDim2.fromOffset(26, 64),
-		UDim2.fromOffset(48, 48),
+		UDim2.fromOffset(ORBIT_CENTER.X, ORBIT_CENTER.Y),
+		UDim2.fromOffset(ORBIT_RADIUS * 2, ORBIT_RADIUS * 2),
 		ORBIT_CYAN,
 		1,
 		Vector2.new(0.5, 0.5)
 	)
 	round(orbitRing, UDim.new(0.5, 0))
-	border(orbitRing, 2, ORBIT_CYAN, 0.35)
+	local orbitStroke = border(orbitRing, 2, ORBIT_CYAN, 0.15)
 	local miniPlanet = box(
 		diveStage,
 		"Planet",
-		UDim2.fromOffset(26, 64),
-		UDim2.fromOffset(28, 28),
+		UDim2.fromOffset(ORBIT_CENTER.X, ORBIT_CENTER.Y),
+		UDim2.fromOffset(24, 24),
 		PLANET_OCEAN,
 		0,
 		Vector2.new(0.5, 0.5)
 	)
 	round(miniPlanet, UDim.new(0.5, 0))
 	border(miniPlanet, 2, OUTLINE)
-	local land = box(miniPlanet, "Land", UDim2.fromOffset(6, 7), UDim2.fromOffset(11, 9), PLANET_LAND, 0)
+	local land = box(miniPlanet, "Land", UDim2.fromOffset(5, 6), UDim2.fromOffset(10, 8), PLANET_LAND, 0)
 	round(land, UDim.new(0.5, 0))
+
 	local diveStreak = box(
 		diveStage,
 		"Streak",
-		UDim2.fromOffset(38, 52),
-		UDim2.fromOffset(38, 6),
+		UDim2.fromOffset(47, 68),
+		UDim2.fromOffset(20, 7),
 		DIVE_BLUE,
 		0.15,
-		Vector2.new(0, 0.5)
+		Vector2.new(0.5, 0.5)
 	)
-	diveStreak.Rotation = -35
 	round(diveStreak, UDim.new(0.5, 0))
-	local diveRock =
-		box(diveStage, "Rock", UDim2.fromOffset(72, 26), UDim2.fromOffset(18, 18), PRIMED, 0, Vector2.new(0.5, 0.5))
+	local diveStreakCore = box(
+		diveStage,
+		"StreakCore",
+		UDim2.fromOffset(47, 68),
+		UDim2.fromOffset(14, 3),
+		ORBIT_CYAN,
+		0.05,
+		Vector2.new(0.5, 0.5)
+	)
+	round(diveStreakCore, UDim.new(0.5, 0))
+
+	local exitRad = math.rad(DIVE_EXIT_DEG)
+	local headRad = math.rad(DIVE_HEADING_DEG)
+	local rockX = ORBIT_CENTER.X + ORBIT_RADIUS * math.cos(exitRad) + 48 * math.cos(headRad)
+	local rockY = ORBIT_CENTER.Y + ORBIT_RADIUS * math.sin(exitRad) + 48 * math.sin(headRad)
+	local diveRock = box(
+		diveStage,
+		"Rock",
+		UDim2.fromOffset(rockX, rockY),
+		UDim2.fromOffset(18, 18),
+		PRIMED,
+		0,
+		Vector2.new(0.5, 0.5)
+	)
 	round(diveRock, UDim.new(0.5, 0))
 	border(diveRock, 2, PRIMED)
-	local diveShip =
-		box(diveStage, "Pod", UDim2.fromOffset(44, 48), UDim2.fromOffset(12, 8), ORBIT_CYAN, 0, Vector2.new(0.5, 0.5))
-	diveShip.Rotation = -35
-	round(diveShip, UDim.new(0.5, 0))
-	border(diveShip, 1.5, OUTLINE)
+	local rockDot =
+		box(diveRock, "Dot", UDim2.fromScale(0.36, 0.38), UDim2.fromOffset(4, 4), WHITE, 0.5, Vector2.new(0.5, 0.5))
+	round(rockDot, UDim.new(0.5, 0))
+
+	local diveShip = makeMiniShip(diveStage, UDim2.fromOffset(30, 78), 0.68)
+	local divePlus = makePlus(diveStage, UDim2.fromOffset(55, 14), 11, PLANET_LAND)
 	local diveHeal = makeText(
 		diveStage,
 		"PerfectTag",
 		Fonts.Display,
 		13,
 		GOLD,
-		UDim2.fromOffset(44, 6),
-		UDim2.fromOffset(44, 18),
-		Enum.TextXAlignment.Right
+		UDim2.fromOffset(63, 6),
+		UDim2.fromOffset(26, 16),
+		Enum.TextXAlignment.Left
 	)
 	diveHeal.Text = "+6%"
 
@@ -607,9 +650,12 @@ function ControlsPanel.new(parent: Instance): ControlsPanel
 		_breakShip = breakShip,
 		_breakRock = breakRock,
 		_breakHeal = breakHeal,
+		_orbitStroke = orbitStroke,
 		_diveStreak = diveStreak,
+		_diveStreakCore = diveStreakCore,
 		_diveShip = diveShip,
 		_diveRock = diveRock,
+		_divePlus = divePlus,
 		_diveHeal = diveHeal,
 	}, ControlsPanel)
 
@@ -755,13 +801,81 @@ function ControlsPanel.Update(self: ControlsPanel, now: number)
 	local rise = math.clamp((phase - 0.45) / 0.45, 0, 1)
 	self._breakHeal.Position = UDim2.fromOffset(68, 34 - 14 * rise)
 
-	-- Core move 3: Slingshot dive from orbit
-	local dive = math.clamp((phase - 0.2) / 0.55, 0, 1)
-	self._diveStreak.Size = UDim2.fromOffset(10 + 34 * dive, 6)
-	self._diveStreak.BackgroundTransparency = if phase < 0.2 then 0.8 else 0.15
-	self._diveShip.Position = UDim2.fromOffset(40 + 28 * dive, 52 - 20 * dive)
-	self._diveRock.Visible = dive < 0.85
-	self._diveHeal.TextTransparency = if dive >= 0.75 then 0 else 1
+	-- Core move 3: Slingshot (skim onto cyan orbit -> tangent blue spear dive -> +6% break)
+	local sPhase = (now % SLINGSHOT_PERIOD) / SLINGSHOT_PERIOD
+	local exitRad = math.rad(DIVE_EXIT_DEG)
+	local exitX = ORBIT_CENTER.X + ORBIT_RADIUS * math.cos(exitRad)
+	local exitY = ORBIT_CENTER.Y + ORBIT_RADIUS * math.sin(exitRad)
+	local headRad = math.rad(DIVE_HEADING_DEG)
+	local dirX = math.cos(headRad)
+	local dirY = math.sin(headRad)
+
+	if sPhase < 0.42 then
+		local orbitT = sPhase / 0.42
+		local thetaDeg = 135 - (135 - DIVE_EXIT_DEG) * orbitT
+		local thetaRad = math.rad(thetaDeg)
+		self._diveShip.root.Position = UDim2.fromOffset(
+			ORBIT_CENTER.X + ORBIT_RADIUS * math.cos(thetaRad),
+			ORBIT_CENTER.Y + ORBIT_RADIUS * math.sin(thetaRad)
+		)
+		self._diveShip.root.Rotation = thetaDeg - 90
+		setShipBoost(self._diveShip, false, 10, false)
+		self._orbitStroke.Transparency = 0.08
+		self._diveStreak.Visible = false
+		self._diveStreakCore.Visible = false
+		self._diveRock.Visible = true
+		self._divePlus.Visible = false
+		self._diveHeal.Visible = false
+	elseif sPhase < 0.74 then
+		local diveU = (sPhase - 0.42) / 0.32
+		local dash = 1 - (1 - diveU) ^ 2
+		local s = 40 * dash
+		self._diveShip.root.Position = UDim2.fromOffset(exitX + s * dirX, exitY + s * dirY)
+		self._diveShip.root.Rotation = DIVE_HEADING_DEG
+		setShipBoost(self._diveShip, true, 15, true)
+		self._orbitStroke.Transparency = 0.42
+		local len = math.max(3, s - 4)
+		self._diveStreak.Visible = s > 4
+		self._diveStreakCore.Visible = s > 8
+		placeRay(self._diveStreak, exitX, exitY, len, 7, DIVE_HEADING_DEG)
+		placeRay(self._diveStreakCore, exitX + 2 * dirX, exitY + 2 * dirY, math.max(2, len - 4), 3, DIVE_HEADING_DEG)
+		self._diveRock.Visible = true
+		self._divePlus.Visible = false
+		self._diveHeal.Visible = false
+	else
+		local hitT = (sPhase - 0.74) / 0.26
+		local s = 40 + 5 * hitT
+		local stillSpearing = hitT < 0.55
+		self._diveShip.root.Position = UDim2.fromOffset(exitX + s * dirX, exitY + s * dirY)
+		self._diveShip.root.Rotation = DIVE_HEADING_DEG
+		setShipBoost(self._diveShip, stillSpearing, if stillSpearing then 12 else 8, stillSpearing)
+		self._orbitStroke.Transparency = 0.45
+
+		local zip = math.min(1, hitT * 2)
+		local startS = 36 * zip
+		local remLen = 36 - startS
+		self._diveStreak.Visible = remLen > 3
+		self._diveStreakCore.Visible = remLen > 6
+		if remLen > 3 then
+			placeRay(self._diveStreak, exitX + startS * dirX, exitY + startS * dirY, remLen, 7, DIVE_HEADING_DEG)
+		end
+		if remLen > 6 then
+			placeRay(
+				self._diveStreakCore,
+				exitX + (startS + 2) * dirX,
+				exitY + (startS + 2) * dirY,
+				remLen - 4,
+				3,
+				DIVE_HEADING_DEG
+			)
+		end
+
+		self._diveRock.Visible = false
+		self._divePlus.Visible = true
+		self._diveHeal.Visible = true
+		self._divePlus.Position = UDim2.fromOffset(55, 16 - 6 * hitT)
+		self._diveHeal.Position = UDim2.fromOffset(63, 8 - 6 * hitT)
+	end
 end
 
 return ControlsPanel
