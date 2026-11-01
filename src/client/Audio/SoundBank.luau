@@ -48,11 +48,11 @@ local SoundBank = {
 	Defeat = define({ Id = 9120005874, Volume = 0.52, Pitch = 0.65 }),
 	UiClick = define({ Id = 9118138365, Volume = 0.34, Pitch = 1.4 }),
 
-	-- Wave-escalating music & Inferno boss theme
-	MusicCalm = define({ Id = 1837392508, Volume = 0.28, Pitch = 1.0, Looped = true, IsMusic = true }),
-	MusicMid = define({ Id = 9043678925, Volume = 0.30, Pitch = 1.0, Looped = true, IsMusic = true }),
-	MusicIntense = define({ Id = 89610760991334, Volume = 0.32, Pitch = 1.0, Looped = true, IsMusic = true }),
-	MusicBoss = define({ Id = 9042357350, Volume = 0.36, Pitch = 1.0, Looped = true, IsMusic = true }),
+	-- Wave-escalating chiptune soundtrack & Inferno boss theme (APM Chiptune album)
+	MusicCalm = define({ Id = 1837768444, Volume = 0.26, Pitch = 1.0, Looped = true, IsMusic = true }),
+	MusicMid = define({ Id = 1837768356, Volume = 0.28, Pitch = 1.0, Looped = true, IsMusic = true }),
+	MusicIntense = define({ Id = 1837768352, Volume = 0.30, Pitch = 1.0, Looped = true, IsMusic = true }),
+	MusicBoss = define({ Id = 1837768323, Volume = 0.33, Pitch = 1.0, Looped = true, IsMusic = true }),
 }
 
 return table.freeze(SoundBank)

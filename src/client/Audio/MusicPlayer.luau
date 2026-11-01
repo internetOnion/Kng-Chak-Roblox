@@ -5,12 +5,12 @@
 	    local music = MusicPlayer.new()
 	    music:Update(snapshot, state, dt) -- every frame
 
-	Crossfades smoothly across four public Creator Store tracks recorded in
-	Audio/SoundBank and docs/audio-licences.md:
-	  - MusicCalm:    Title screen and Waves 1-4
-	  - MusicMid:     Waves 5-8
-	  - MusicIntense: Waves 9-12
-	  - MusicBoss:    The Inferno (rising subtly across boss phases 1-3)
+	Crossfades smoothly across four public Creator Store chiptune tracks recorded
+	in Audio/SoundBank and docs/audio-licences.md:
+	  - MusicCalm:    Title screen and Waves 1-4 ("Coin Bonus", 119 BPM)
+	  - MusicMid:     Waves 5-8 and Victory ("High Score", 131 BPM)
+	  - MusicIntense: Waves 9-12 ("Retro Gamer", 140 BPM)
+	  - MusicBoss:    The Inferno ("Final Boss", stepping +1 semitone in Phase 3)
 
 	Ducks gently during Pause and UpgradePick so menus and cards read cleanly.
 ]]
@@ -26,7 +26,8 @@ type TrackId = "MusicCalm" | "MusicMid" | "MusicIntense" | "MusicBoss"
 
 local TRACK_IDS: { TrackId } = { "MusicCalm", "MusicMid", "MusicIntense", "MusicBoss" }
 local FADE_RATE = 1.6 -- volume units per second for smooth crossfades
-local PITCH_EASE = 3.0
+local PITCH_EASE = 4.0
+local SEMITONE = 2 ^ (1 / 12) -- +1 semitone (~1.0595) keeps Phase 3 boss music in tune
 
 type Track = {
 	sound: Sound,
@@ -81,28 +82,31 @@ end
 
 local function pickCue(snapshot: Run.Snapshot, state: GameState): (TrackId, number, number)
 	if state == "Start" then
-		return "MusicCalm", 0.72, 0.97
+		return "MusicCalm", 0.82, 1.0
 	elseif state == "Finished" then
-		local pitch = if snapshot.Phase == "Won" then 1.02 else 0.90
-		return "MusicCalm", 0.48, pitch
+		if snapshot.Phase == "Won" then
+			return "MusicMid", 0.62, 1.0
+		end
+		return "MusicCalm", 0.42, 1.0
 	end
 
 	local boss = snapshot.Boss
 	if boss then
 		local phaseStep = math.clamp(boss.Phase - 1, 0, 2)
-		return "MusicBoss", 1.0 + 0.04 * phaseStep, 1.0 + 0.028 * phaseStep
+		local pitch = if phaseStep >= 2 then SEMITONE else 1.0
+		return "MusicBoss", 1.0 + 0.05 * phaseStep, pitch
 	end
 
 	local wave = math.max(1, snapshot.Wave)
 	if wave <= 4 then
 		local t = (wave - 1) / 3
-		return "MusicCalm", 0.88 + 0.12 * t, 1.0 + 0.04 * t
+		return "MusicCalm", 0.90 + 0.10 * t, 1.0
 	elseif wave <= 8 then
 		local t = (wave - 5) / 3
-		return "MusicMid", 0.92 + 0.12 * t, 1.0 + 0.045 * t
+		return "MusicMid", 0.92 + 0.10 * t, 1.0
 	else
 		local t = math.clamp((wave - 9) / 3, 0, 1)
-		return "MusicIntense", 0.96 + 0.12 * t, 1.0 + 0.055 * t
+		return "MusicIntense", 0.95 + 0.10 * t, 1.0
 	end
 end
 

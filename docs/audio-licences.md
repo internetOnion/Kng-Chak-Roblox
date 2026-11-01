@@ -33,7 +33,7 @@ They are already public and moderated, so nothing needs uploading. Original or c
 
 | SoundBank name | Asset | Name on the Creator Store | Source / licence |
 |---|---|---|---|
-| MusicCalm | [1837392508](https://create.roblox.com/store/asset/1837392508) | Space Synth | APM Music (`APMOfficial`), licensed by Roblox |
-| MusicMid | [9043678925](https://create.roblox.com/store/asset/9043678925) | Cyberian | APM Music (`APMOfficial`), licensed by Roblox |
-| MusicIntense | [89610760991334](https://create.roblox.com/store/asset/89610760991334) | Firestorm Protocol | APM Music (`APMOfficial`), licensed by Roblox |
-| MusicBoss | [9042357350](https://create.roblox.com/store/asset/9042357350) | The Last Sentinel (Underscore) | APM Music (`APMOfficial`), licensed by Roblox |
+| MusicCalm | [1837768444](https://create.roblox.com/store/asset/1837768444) | Coin Bonus (a) | APM Music (`APMOfficial`, *Chiptune*), licensed by Roblox |
+| MusicMid | [1837768356](https://create.roblox.com/store/asset/1837768356) | High Score (a) | APM Music (`APMOfficial`, *Chiptune*), licensed by Roblox |
+| MusicIntense | [1837768352](https://create.roblox.com/store/asset/1837768352) | Retro Gamer (a) | APM Music (`APMOfficial`, *Chiptune*), licensed by Roblox |
+| MusicBoss | [1837768323](https://create.roblox.com/store/asset/1837768323) | Final Boss (a) | APM Music (`APMOfficial`, *Chiptune*), licensed by Roblox |
