@@ -19,19 +19,33 @@ local ArenaSpace = require(KngChak.Arena.ArenaSpace)
 local InfernoConfig = require(KngChak.Data.InfernoConfig)
 local Run = require(KngChak.Run.Run)
 
+local Outlines = require(script.Parent.Outlines)
+
 local LIFT = -1.5 -- sunk into the play plane, so its top stays about level with the ship and its plates stand out on its rim
 
 local BossView = {}
 BossView.__index = BossView
 
-export type BossView = typeof(setmetatable({} :: { _parent: Instance, _model: Model? }, BossView))
+export type BossView = typeof(setmetatable(
+	{} :: {
+		_parent: Instance,
+		_model: Model?,
+		_outline: Outlines.Handle?,
+	},
+	BossView
+))
 
 function BossView.new(parent: Instance): BossView
-	return setmetatable({ _parent = parent, _model = nil :: Model? }, BossView)
+	return setmetatable({ _parent = parent, _model = nil :: Model?, _outline = nil :: Outlines.Handle? }, BossView)
 end
 
-local function build(parent: Instance, config: InfernoConfig.InfernoConfig): Model
-	local prefab = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Boss"):WaitForChild("Inferno") :: Model
+local function build(parent: Instance, config: InfernoConfig.InfernoConfig): (Model, Outlines.Handle)
+	local assets = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Boss")
+	local prefab = (
+		assets:FindFirstChild("kc_boss_inferno")
+		or assets:FindFirstChild("Inferno")
+		or assets:FindFirstChildWhichIsA("Model")
+	) :: Model
 	local model = prefab:Clone()
 	model.WorldPivot = CFrame.identity -- assets are built around the origin; Studio may have picked another pivot
 	model:ScaleTo(config.BodyRadius)
@@ -41,23 +55,43 @@ local function build(parent: Instance, config: InfernoConfig.InfernoConfig): Mod
 		end
 	end
 	model.Parent = parent
-	return model
+	local outline = Outlines.Register(model, config.BodyRadius, Outlines.Tier.Hero)
+	return model, outline
 end
 
 function BossView.Update(self: BossView, boss: Run.BossSnapshot?, config: InfernoConfig.InfernoConfig)
 	if not boss then
+		if self._outline then
+			self._outline:Unregister()
+			self._outline = nil
+		end
 		if self._model then
 			self._model:Destroy()
 			self._model = nil
 		end
 		return
 	end
-	local model = self._model or build(self._parent, config)
-	self._model = model
-	model:PivotTo(ArenaSpace.CFrameAt(boss.Position, -boss.Position, LIFT))
+	local existingModel = self._model
+	local existingOutline = self._outline
+	local activeModel: Model
+	local activeOutline: Outlines.Handle
+	if existingModel and existingOutline then
+		activeModel = existingModel
+		activeOutline = existingOutline
+	else
+		activeModel, activeOutline = build(self._parent, config)
+		self._model = activeModel
+		self._outline = activeOutline
+	end
+	activeModel:PivotTo(ArenaSpace.CFrameAt(boss.Position, -boss.Position, LIFT))
+	activeOutline:SetState(true, false, boss.Position.Magnitude, Outlines.Tier.Hero)
 end
 
 function BossView.Destroy(self: BossView)
+	if self._outline then
+		self._outline:Unregister()
+		self._outline = nil
+	end
 	if self._model then
 		self._model:Destroy()
 		self._model = nil

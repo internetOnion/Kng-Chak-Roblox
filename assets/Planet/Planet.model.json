@@ -41,19 +41,19 @@
         "CanTouch": false,
         "CanQuery": false,
         "Size": [
-          4.6,
-          4.6,
-          4.6
+          5.0,
+          5.0,
+          5.0
         ],
         "Position": [
-          2.1741,
-          6.528,
-          -5.5922
+          7.3266,
+          4.3092,
+          0.0016
         ],
         "Color": [
-          0.2471,
-          0.702,
-          0.2902
+          0.3686,
+          0.8784,
+          0.3686
         ],
         "Material": "SmoothPlastic",
         "Shape": "Ball"
@@ -70,14 +70,14 @@
         "CanTouch": false,
         "CanQuery": false,
         "Size": [
-          3.8,
-          3.8,
-          3.8
+          4.4,
+          4.4,
+          4.4
         ],
         "Position": [
-          -3.8873,
-          5.1644,
-          -6.6467
+          -2.9106,
+          5.2345,
+          6.3096
         ],
         "Color": [
           0.3686,
@@ -104,14 +104,14 @@
           5.2
         ],
         "Position": [
-          -4.356,
-          7.316,
-          -0.6209
+          -7.9196,
+          -0.4353,
+          -2.914
         ],
         "Color": [
-          0.2471,
-          0.702,
-          0.2902
+          0.3686,
+          0.8784,
+          0.3686
         ],
         "Material": "SmoothPlastic",
         "Shape": "Ball"
@@ -128,14 +128,14 @@
         "CanTouch": false,
         "CanQuery": false,
         "Size": [
-          4.1,
-          4.1,
-          4.1
+          4.2,
+          4.2,
+          4.2
         ],
         "Position": [
-          -5.2993,
-          5.5225,
-          5.0207
+          2.1538,
+          -8.0191,
+          -2.7585
         ],
         "Color": [
           0.3686,
@@ -157,43 +157,14 @@
         "CanTouch": false,
         "CanQuery": false,
         "Size": [
-          5.5,
-          5.5,
-          5.5
+          3.0,
+          3.0,
+          3.0
         ],
         "Position": [
-          0.455,
-          6.7817,
-          5.1801
-        ],
-        "Color": [
-          0.2471,
-          0.702,
-          0.2902
-        ],
-        "Material": "SmoothPlastic",
-        "Shape": "Ball"
-      }
-    },
-    {
-      "name": "Land6",
-      "className": "Part",
-      "properties": {
-        "TopSurface": "Smooth",
-        "BottomSurface": "Smooth",
-        "Anchored": true,
-        "CanCollide": false,
-        "CanTouch": false,
-        "CanQuery": false,
-        "Size": [
-          3.6,
-          3.6,
-          3.6
-        ],
-        "Position": [
-          6.5108,
-          5.1058,
-          4.2953
+          5.9117,
+          -0.9909,
+          -6.8465
         ],
         "Color": [
           0.3686,
@@ -205,7 +176,7 @@
       }
     },
     {
-      "name": "Land7",
+      "name": "LandDark1",
       "className": "Part",
       "properties": {
         "TopSurface": "Smooth",
@@ -215,14 +186,130 @@
         "CanTouch": false,
         "CanQuery": false,
         "Size": [
-          4.8,
-          4.8,
-          4.8
+          4.3,
+          4.3,
+          4.3
         ],
         "Position": [
-          6.2715,
-          5.9767,
-          -2.0562
+          5.7414,
+          6.6018,
+          -0.1033
+        ],
+        "Color": [
+          0.2471,
+          0.702,
+          0.2902
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "LandDark2",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          3.9,
+          3.9,
+          3.9
+        ],
+        "Position": [
+          -5.4353,
+          5.137,
+          4.7313
+        ],
+        "Color": [
+          0.2471,
+          0.702,
+          0.2902
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "LandDark3",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          4.6,
+          4.6,
+          4.6
+        ],
+        "Position": [
+          -7.1537,
+          -3.4561,
+          -3.4205
+        ],
+        "Color": [
+          0.2471,
+          0.702,
+          0.2902
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "LandDark4",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          3.8,
+          3.8,
+          3.8
+        ],
+        "Position": [
+          4.6704,
+          -6.6787,
+          -3.5758
+        ],
+        "Color": [
+          0.2471,
+          0.702,
+          0.2902
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "LandDark5",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          2.9,
+          2.9,
+          2.9
+        ],
+        "Position": [
+          3.2059,
+          2.3286,
+          8.2471
         ],
         "Color": [
           0.2471,
@@ -244,14 +331,14 @@
         "CanTouch": false,
         "CanQuery": false,
         "Size": [
-          4.6,
-          4.6,
-          4.6
+          5.2,
+          5.2,
+          5.2
         ],
         "Position": [
-          0,
-          5.5397,
-          -7.2
+          0.0,
+          5.2745,
+          -6.8553
         ],
         "Color": [
           1.0,
@@ -261,6 +348,74 @@
         "Material": "SmoothPlastic",
         "Shape": "Ball"
       }
+    },
+    {
+      "name": "IceRidge",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          3.2,
+          3.2,
+          3.2
+        ],
+        "Position": [
+          -2.3162,
+          6.5916,
+          -5.9077
+        ],
+        "Color": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Rim",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          21.4,
+          7.5,
+          21.4
+        ],
+        "Position": [
+          0,
+          -2.6,
+          -0.85
+        ],
+        "Color": [
+          0.498,
+          0.902,
+          1.0
+        ],
+        "Material": "Neon",
+        "Transparency": 0.72,
+        "CastShadow": false
+      },
+      "children": [
+        {
+          "name": "Mesh",
+          "className": "SpecialMesh",
+          "properties": {
+            "MeshType": "Sphere"
+          }
+        }
+      ]
     },
     {
       "name": "Outline",

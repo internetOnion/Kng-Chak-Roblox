@@ -1,0 +1,189 @@
+{
+  "className": "Model",
+  "children": [
+    {
+      "name": "BodyLeft",
+      "className": "WedgePart",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.85,
+          0.82,
+          1.5
+        ],
+        "Position": [
+          -0.26,
+          0,
+          -0.18
+        ],
+        "Color": [
+          0.9098,
+          0.698,
+          0.4784
+        ],
+        "Material": "SmoothPlastic",
+        "Orientation": [
+          0,
+          -14,
+          10
+        ]
+      }
+    },
+    {
+      "name": "BodyRight",
+      "className": "WedgePart",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.85,
+          0.78,
+          1.38
+        ],
+        "Position": [
+          0.28,
+          0.02,
+          -0.06
+        ],
+        "Color": [
+          0.9098,
+          0.698,
+          0.4784
+        ],
+        "Material": "SmoothPlastic",
+        "Orientation": [
+          0,
+          22,
+          -10
+        ]
+      }
+    },
+    {
+      "name": "BodyBase",
+      "className": "WedgePart",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          1.1,
+          0.72,
+          0.92
+        ],
+        "Position": [
+          0,
+          -0.02,
+          0.52
+        ],
+        "Color": [
+          0.9098,
+          0.698,
+          0.4784
+        ],
+        "Material": "SmoothPlastic",
+        "Orientation": [
+          0,
+          180,
+          0
+        ]
+      }
+    },
+    {
+      "name": "Facet1",
+      "className": "WedgePart",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.48,
+          0.48,
+          0.82
+        ],
+        "Position": [
+          0,
+          0.32,
+          -0.1
+        ],
+        "Color": [
+          0.8196,
+          0.5882,
+          0.3608
+        ],
+        "Material": "SmoothPlastic",
+        "Orientation": [
+          0,
+          5,
+          0
+        ]
+      }
+    },
+    {
+      "name": "Facet2",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.4,
+          0.3,
+          0.52
+        ],
+        "Position": [
+          -0.2,
+          0.26,
+          0.24
+        ],
+        "Color": [
+          0.9608,
+          0.7961,
+          0.6118
+        ],
+        "Material": "SmoothPlastic",
+        "Orientation": [
+          12,
+          -28,
+          8
+        ]
+      }
+    },
+    {
+      "name": "Outline",
+      "className": "Highlight",
+      "properties": {
+        "OutlineColor": [
+          0,
+          0,
+          0
+        ],
+        "OutlineTransparency": 0,
+        "FillColor": [
+          1.0,
+          0.3098,
+          0.8471
+        ],
+        "FillTransparency": 1,
+        "DepthMode": "Occluded"
+      }
+    }
+  ]
+}

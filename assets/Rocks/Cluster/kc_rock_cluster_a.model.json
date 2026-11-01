@@ -2,7 +2,7 @@
   "className": "Model",
   "children": [
     {
-      "name": "Body",
+      "name": "Body1",
       "className": "Part",
       "properties": {
         "TopSurface": "Smooth",
@@ -12,59 +12,26 @@
         "CanTouch": false,
         "CanQuery": false,
         "Size": [
-          1.7,
-          1.7,
-          1.7
+          1.08,
+          1.08,
+          1.08
         ],
         "Position": [
-          0,
-          0,
-          0
+          -0.22,
+          0.24,
+          0.46
         ],
         "Color": [
-          0.4549,
-          0.5294,
-          0.6392
-        ],
-        "Material": "SmoothPlastic",
-        "Orientation": [
-          0,
-          30,
-          0
-        ]
-      }
-    },
-    {
-      "name": "Rivet1",
-      "className": "Part",
-      "properties": {
-        "TopSurface": "Smooth",
-        "BottomSurface": "Smooth",
-        "Anchored": true,
-        "CanCollide": false,
-        "CanTouch": false,
-        "CanQuery": false,
-        "Size": [
-          0.35,
-          0.35,
-          0.35
-        ],
-        "Position": [
-          0.7513,
-          0.85,
-          0.2013
-        ],
-        "Color": [
-          0.2353,
-          0.2745,
-          0.3451
+          0.698,
+          0.3725,
+          0.8157
         ],
         "Material": "SmoothPlastic",
         "Shape": "Ball"
       }
     },
     {
-      "name": "Rivet2",
+      "name": "Body2",
       "className": "Part",
       "properties": {
         "TopSurface": "Smooth",
@@ -74,26 +41,26 @@
         "CanTouch": false,
         "CanQuery": false,
         "Size": [
-          0.35,
-          0.35,
-          0.35
+          1.06,
+          1.06,
+          1.06
         ],
         "Position": [
-          0.2013,
-          0.85,
-          -0.7513
+          -0.46,
+          0.0,
+          -0.2
         ],
         "Color": [
-          0.2353,
-          0.2745,
-          0.3451
+          0.698,
+          0.3725,
+          0.8157
         ],
         "Material": "SmoothPlastic",
         "Shape": "Ball"
       }
     },
     {
-      "name": "Rivet3",
+      "name": "Body3",
       "className": "Part",
       "properties": {
         "TopSurface": "Smooth",
@@ -103,26 +70,26 @@
         "CanTouch": false,
         "CanQuery": false,
         "Size": [
-          0.35,
-          0.35,
-          0.35
+          1.08,
+          1.08,
+          1.08
         ],
         "Position": [
-          -0.2013,
-          0.85,
-          0.7513
+          0.2,
+          0.26,
+          -0.46
         ],
         "Color": [
-          0.2353,
-          0.2745,
-          0.3451
+          0.698,
+          0.3725,
+          0.8157
         ],
         "Material": "SmoothPlastic",
         "Shape": "Ball"
       }
     },
     {
-      "name": "Rivet4",
+      "name": "Body4",
       "className": "Part",
       "properties": {
         "TopSurface": "Smooth",
@@ -132,19 +99,77 @@
         "CanTouch": false,
         "CanQuery": false,
         "Size": [
-          0.35,
-          0.35,
-          0.35
+          1.04,
+          1.04,
+          1.04
         ],
         "Position": [
-          -0.7513,
-          0.85,
-          -0.2013
+          0.46,
+          0.02,
+          0.2
         ],
         "Color": [
-          0.2353,
-          0.2745,
-          0.3451
+          0.698,
+          0.3725,
+          0.8157
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Bud1",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.52,
+          0.52,
+          0.52
+        ],
+        "Position": [
+          -0.04,
+          0.56,
+          0.02
+        ],
+        "Color": [
+          0.8353,
+          0.5412,
+          0.9412
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Bud2",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.4,
+          0.4,
+          0.4
+        ],
+        "Position": [
+          0.32,
+          0.48,
+          -0.06
+        ],
+        "Color": [
+          0.8353,
+          0.5412,
+          0.9412
         ],
         "Material": "SmoothPlastic",
         "Shape": "Ball"

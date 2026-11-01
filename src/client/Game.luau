@@ -7,8 +7,10 @@
 	results, lost or won (tap to play again) -> a fresh call, as often as you like,
 	without stopping play mode. The pause button (or Esc, or Roblox's own menu
 	opening) pauses the call; both Start and Pause include a Controls button to
-	reopen the visual controls guide anytime. Whether it's been seen lasts for this
-	visit until the saved profile (#50) keeps it.
+	reopen the visual controls guide anytime, and a music toggle (also beside Pause
+	during play, or M on keyboard) turns the soundtrack off or on. Whether controls
+	have been seen or music muted lasts for this visit until the saved profile (#50)
+	keeps it.
 
 	Each Run comes with its own views in a fresh Arena folder; a restart throws
 	both away. Each frame the input adapter turns the player's controls into the
@@ -48,7 +50,11 @@ local ControlsPanel = require(script.Parent.UI.ControlsPanel)
 local DevBar = require(script.Parent.Dev.DevBar)
 local Device = require(script.Parent.Device)
 local FuelArc = require(script.Parent.UI.FuelArc)
+local Haptics = require(script.Parent.Input.Haptics)
 local Hud = require(script.Parent.UI.Hud)
+local MusicButton = require(script.Parent.UI.MusicButton)
+local MusicPlayer = require(script.Parent.Audio.MusicPlayer)
+local Outlines = require(script.Parent.Views.Outlines)
 local Overlay = require(script.Parent.UI.Overlay)
 local PauseButton = require(script.Parent.UI.PauseButton)
 local PlanetView = require(script.Parent.Views.PlanetView)
@@ -64,25 +70,25 @@ local StyleTile = require(script.Parent.Dev.StyleTile)
 local ThreatView = require(script.Parent.Views.ThreatView)
 local TuningPanel = require(script.Parent.Dev.TuningPanel)
 local UpgradeCards = require(script.Parent.UI.UpgradeCards)
+local VfxView = require(script.Parent.Views.VfxView)
 
 local DUMP_KEY = Enum.KeyCode.F7 -- Studio only: print the current run's recording
 local ZOOMS = { 50, 35 } -- the CamView candidates the phone playtest compares (#18)
 local SKY_HALF = Vector2.new(190, 140) -- the sky covers the arena plus a screen's width around it
-local WON = Color3.fromHex("#5ee05e")
-local LOST = Color3.fromHex("#ff4d5e")
-local CONTROLS_PILL = Color3.fromHex("#2f2d80")
 
 type Session = {
 	run: Run.Run,
 	recorder: Replay.Recorder?, -- Studio only, so a long run on a phone doesn't keep every frame
 	log: { string },
 	folder: Folder,
+	planet: PlanetView.PlanetView,
 	boss: BossView.BossView,
 	rings: RingsView.RingsView,
 	rocks: RockView.RockView,
 	shield: ShieldView.ShieldView,
 	ship: ShipView.ShipView,
 	threats: ThreatView.ThreatView,
+	vfx: VfxView.VfxView,
 }
 
 type State = "Start" | "Playing" | "Paused" | "Finished"
@@ -115,48 +121,43 @@ local function newSession(overrides: Tuning.Overrides?, startWave: number?): Ses
 	local run = Run.new({ Seed = seed, Tuning = overrides, StartWave = startWave })
 	GameEvents.Follow(run.Events)
 
-	PlanetView.new(folder)
+	local planet = PlanetView.new(folder)
+	local ship = ShipView.new(folder)
+	ship:Listen(run.Events)
+	local vfx = VfxView.new(folder)
+	vfx:Listen(run.Events)
 	return {
 		run = run,
 		recorder = if RunService:IsStudio() and not startWave then Replay.Recorder.new(seed) else nil,
 		log = Replay.Log(run),
 		folder = folder,
+		planet = planet,
 		boss = BossView.new(folder),
 		rings = RingsView.new(folder),
 		rocks = RockView.new(folder),
 		shield = ShieldView.new(folder),
-		ship = ShipView.new(folder),
+		ship = ship,
 		threats = ThreatView.new(folder),
+		vfx = vfx,
 	}
 end
 
 local function endSession(session: Session)
 	GameEvents.Follow(nil)
+	session.planet:Destroy()
+	session.ship:Destroy()
+	session.rocks:Destroy()
+	session.boss:Destroy()
+	session.vfx:Destroy()
 	session.run:Destroy()
 	session.folder:Destroy()
-end
-
-local function clock(seconds: number): string
-	return string.format("%d:%02d", seconds // 60, math.floor(seconds % 60))
-end
-
--- The results screen's words for a finished call.
-local function results(summary: Run.Summary): (string, string, Color3)
-	local reached = if summary.Wave > WaveConfig.LastWave then "the Inferno" else `wave {summary.Wave}`
-	local body = `Score {math.floor(summary.Score)} · reached {reached}\n`
-		.. `Best combo {summary.BestCombo} · PERFECTs {summary.Perfects} · {clock(summary.Time)}\n`
-		.. "Tap to play again"
-	if summary.Won then
-		return "CALL CLEARED!", body, WON
-	end
-	return "PLANET LOST", body, LOST
 end
 
 return function()
 	local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui") :: PlayerGui
 	Device.Setup(playerGui)
 	Stage.Light()
-	Stage.Sky(workspace, Vector2.zero, SKY_HALF)
+	local sky = Stage.Sky(workspace, Vector2.zero, SKY_HALF)
 	local hud = Hud.new(playerGui)
 	local callouts = Callouts.new(playerGui)
 	callouts:Listen(GameEvents)
@@ -168,7 +169,24 @@ return function()
 	fuelArc:Listen(GameEvents)
 	local sounds = SoundPlayer.new()
 	sounds:Listen(GameEvents)
-	local overlay = Overlay.new(playerGui)
+	local music = MusicPlayer.new()
+	local haptics = Haptics.new(playerGui)
+	local musicButton: MusicButton.MusicButton
+	local overlay: Overlay.Overlay
+	local function toggleMusic()
+		local muted = not music:IsMuted()
+		music:SetMuted(muted)
+		musicButton:SetMuted(muted)
+		overlay:SetMusicMuted(muted)
+	end
+	haptics:Listen(GameEvents)
+	overlay = Overlay.new(playerGui, function()
+		sounds:Play("UiClick")
+	end, toggleMusic)
+	musicButton = MusicButton.new(playerGui, function()
+		sounds:Play("UiClick")
+		toggleMusic()
+	end)
 	local controlsPanel = ControlsPanel.new(playerGui)
 	local controls = PlayerInput.new(playerGui)
 	local camera = CameraView.new()
@@ -191,6 +209,7 @@ return function()
 		chevron:SetVisible(visible)
 		fuelArc:SetVisible(visible)
 		pauseButton:SetVisible(visible)
+		musicButton:SetVisible(visible)
 		banner:SetVisible(visible)
 		callouts:SetVisible(visible)
 	end
@@ -215,6 +234,17 @@ return function()
 	local showStart: () -> ()
 	local showPause: () -> ()
 
+	local function returnToTitle()
+		endSession(session)
+		banner:Clear()
+		callouts:Clear()
+		controlsPanel:Hide()
+		session = newSession(overrides())
+		snapshot = session.run:Snapshot()
+		controls:Reset()
+		showStart()
+	end
+
 	local function resume()
 		if state ~= "Paused" then
 			return
@@ -228,18 +258,23 @@ return function()
 	end
 
 	function showPause()
-		local extras: { Overlay.Extra } = {
-			{
-				Text = "Controls",
-				Color = CONTROLS_PILL,
-				OnTap = function()
-					overlay:Hide()
-					controlsPanel:Show("GOT IT", showPause)
-				end,
-			},
-			{ Text = "Restart call", OnTap = startCall },
-		}
-		overlay:Show("PAUSED", "Tap to resume", resume, extras)
+		overlay:ShowPause({
+			Wave = snapshot.Wave,
+			LastWave = WaveConfig.LastWave,
+			IsBoss = snapshot.Boss ~= nil,
+			PlanetHp = snapshot.PlanetHp,
+			PlanetMaxHp = snapshot.PlanetMaxHp,
+			PlanetShield = snapshot.PlanetShield,
+			Score = snapshot.Score,
+		}, {
+			OnResume = resume,
+			OnControls = function()
+				overlay:Hide()
+				controlsPanel:Show("GOT IT", showPause)
+			end,
+			OnRestart = startCall,
+			OnTitle = returnToTitle,
+		})
 	end
 
 	local function pause()
@@ -253,6 +288,7 @@ return function()
 	end
 
 	local function toggle()
+		sounds:Play("UiClick")
 		if controlsPanel:IsOpen() then
 			controlsPanel:Close()
 		elseif state == "Paused" then
@@ -279,7 +315,6 @@ return function()
 	function showStart()
 		state = "Start"
 		showPlayUi(false)
-		local body = "Defend the planet.\nTap to start"
 		local function onPrimaryTap()
 			if seenControls then
 				startCall()
@@ -291,19 +326,14 @@ return function()
 				end)
 			end
 		end
-		overlay:Show("KNG CHAK", body, onPrimaryTap, {
-			{
-				Text = "Controls",
-				Color = CONTROLS_PILL,
-				OnTap = function()
-					overlay:Hide()
-					controlsPanel:Show("GOT IT", function()
-						seenControls = true
-						showStart()
-					end)
-				end,
-			},
-		})
+		local function onControlsTap()
+			overlay:Hide()
+			controlsPanel:Show("GOT IT", function()
+				seenControls = true
+				showStart()
+			end)
+		end
+		overlay:ShowStart(onPrimaryTap, onControlsTap)
 	end
 
 	if RunService:IsStudio() then
@@ -350,9 +380,11 @@ return function()
 					local shown = tile or StyleTile.new()
 					tile = shown
 					if showingTile then
+						session.folder.Parent = nil
 						shown:Show()
 					else
 						shown:Hide()
+						session.folder.Parent = workspace
 					end
 					showPlayUi(state == "Playing" and not showingTile)
 					overlay:SetSuppressed(showingTile)
@@ -366,6 +398,12 @@ return function()
 					return "Inferno"
 				end,
 				onClick = function()
+					if showingTile and tile then
+						showingTile = false
+						tile:Hide()
+						overlay:SetSuppressed(false)
+						controlsPanel:SetSuppressed(false)
+					end
 					begin(WaveConfig.LastWave + 1) -- past the last wave: the Inferno at once
 				end,
 			},
@@ -389,38 +427,49 @@ return function()
 		if state == "Playing" and (snapshot.Phase == "Over" or snapshot.Phase == "Won") then
 			state = "Finished"
 			showPlayUi(false)
-			local title, body, color = results(session.run:Summary())
+			local summary = session.run:Summary()
 			local function showResults()
-				overlay:Show(title, body, startCall, {
-					{
-						Text = "Controls",
-						Color = CONTROLS_PILL,
-						OnTap = function()
-							overlay:Hide()
-							controlsPanel:Show("GOT IT", showResults)
-						end,
-					},
-				}, color)
+				overlay:ShowResults(summary, WaveConfig.LastWave, {
+					OnPlayAgain = startCall,
+					OnControls = function()
+						overlay:Hide()
+						controlsPanel:Show("GOT IT", showResults)
+					end,
+					OnTitle = returnToTitle,
+				})
 			end
 			showResults()
 		end
 
+		local now = os.clock()
 		local tuning = session.run:GetTuning()
 		local arena = tuning.Arena
+		local playing = state == "Playing" and not showingTile
 		if showingTile and tile then
+			tile:Update(dt)
 			camera:LookAt(tile.Focus, arena)
+		elseif state == "Start" then
+			camera:LookAt(Vector2.new(math.sin(now * 0.25) * 4, 0), arena)
 		else
 			camera:Update(snapshot.Ship.Position, arena, dt)
 		end
-		local now = os.clock()
+		local focus, viewHalf = camera:View()
+		if not showingTile then
+			sky:Update(focus)
+			if state ~= "Paused" then
+				session.planet:Update(dt)
+			end
+		end
+		local coneDeg = if snapshot.Ship.IsInOrbit then tuning.Ship.FlareConeDeg else tuning.Ship.PushConeDeg
 		session.rings:Update(snapshot.Ship, arena)
-		session.ship:Update(snapshot.Ship)
+		session.ship:Update(snapshot.Ship, dt, playing, coneDeg)
 		session.rocks:Update(snapshot.Rocks)
 		session.boss:Update(snapshot.Boss, tuning.Inferno)
 		session.shield:Update(snapshot.PlanetShield, snapshot.PlanetMaxShield, arena)
 		session.threats:Update(snapshot, arena, now)
+		session.vfx:Update(snapshot, tuning, dt, playing)
+		Outlines.Step(arena.CamTilt)
 		if not showingTile then
-			local focus, viewHalf = camera:View()
 			radar:Update(snapshot, arena, focus, viewHalf, now)
 			chevron:Update(snapshot, arena.PlanetRadius, now)
 			fuelArc:Update(snapshot, tuning.Ship, now)
@@ -428,11 +477,12 @@ return function()
 		end
 		hud:Update(snapshot)
 		controlsPanel:Update(now)
-		local playing = state == "Playing" and not showingTile
 		local inArena = playing and snapshot.Phase ~= "UpgradePick"
 		cards:Update(snapshot, playing, now, tuning.Waves.SurgeHeal)
 		banner:SetVisible(inArena) -- the cards take the screen
 		callouts:SetVisible(inArena)
 		sounds:UpdateEngine(snapshot.Ship, playing, dt)
+		sounds:UpdateThreat(snapshot, arena.PlanetRadius, playing, now)
+		music:Update(snapshot, state, dt)
 	end)
 end

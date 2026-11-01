@@ -1,13 +1,16 @@
 # Audio licences
 
-Every sound the Roblox version plays, where it comes from and why we may use it. Keep this in step with `src/client/Audio/SoundBank.luau`: add a row before adding a sound.
+Every sound and music track the Roblox version plays, where it comes from and why we may use it. Keep this in step with `src/client/Audio/SoundBank.luau`: add a row before adding a sound.
 
-All current sounds are free Creator Store audio that Roblox licenses for use in Roblox experiences:
+All sounds and music tracks are free, public, moderated Creator Store audio that Roblox licenses for use in Roblox experiences:
 
-- **Pro Sound Effects library** (Creator Store creator `ProSoundEffects`, each description ends "Courtesy of Pro Sound Effects"): part of the sound-effect library Roblox licensed from Pro Sound Effects for creators to use in their experiences. Use only inside Roblox; the files may not be downloaded and used elsewhere.
+- **Pro Sound Effects library** (Creator Store creator `ProSoundEffects`, each description ends *"Courtesy of Pro Sound Effects"*): part of the sound-effect library Roblox licensed from Pro Sound Effects for creators to use in their experiences. Use only inside Roblox; the files may not be downloaded and used elsewhere.
+- **APM Music library** (Creator Store creator `APMOfficial`): part of the production music library Roblox licenses from APM Music for creators to use inside Roblox experiences (well within Roblox's per-experience APM track allowance: Kng Chak uses 4 tracks). Use only inside Roblox.
 - **Roblox** (creator `Roblox`): audio uploaded by Roblox itself for use in experiences.
 
-They're already public and moderated, so nothing needs uploading.
+They are already public and moderated, so nothing needs uploading. Original or commissioned audio can replace any entry by changing its ID in `SoundBank.luau` and its row here.
+
+## Sound Effects
 
 | SoundBank name | Asset | Name on the Creator Store | Source / licence |
 |---|---|---|---|
@@ -18,5 +21,19 @@ They're already public and moderated, so nothing needs uploading.
 | Clang | [9119072660](https://create.roblox.com/store/asset/9119072660) | Shield Clang As Hit Metal Sword Hubcap 1 (SFX) | Pro Sound Effects, licensed by Roblox |
 | Impact | [9116329922](https://create.roblox.com/store/asset/9116329922) | Low Impacts 3 (SFX) | Pro Sound Effects, licensed by Roblox |
 | Bump | [9114361757](https://create.roblox.com/store/asset/9114361757) | Explosions 1 (SFX) | Pro Sound Effects, licensed by Roblox |
+| Perfect, CoreCrack | [9125446879](https://create.roblox.com/store/asset/9125446879) | Computer Melody Melodic Blitz Electronic Gam (SFX) | Pro Sound Effects, licensed by Roblox |
+| Flare, Heal, UpgradePick | [9125644310](https://create.roblox.com/store/asset/9125644310) | Magic Twirling Small High Pitch Spinning Chi (SFX) | Pro Sound Effects, licensed by Roblox |
+| ShieldHit | [9118196441](https://create.roblox.com/store/asset/9118196441) | Robot Absorb Target Drones 5 (SFX) | Pro Sound Effects, licensed by Roblox |
+| OrbitLock, ImpactAlarm | [9113399926](https://create.roblox.com/store/asset/9113399926) | Beeps Simple Multiple Variations 5 (SFX) | Pro Sound Effects, licensed by Roblox |
+| WaveStart, Defeat | [9120005874](https://create.roblox.com/store/asset/9120005874) | Throbbing Synth 2 (SFX) | Pro Sound Effects, licensed by Roblox |
+| WaveClear, Victory | [9125641284](https://create.roblox.com/store/asset/9125641284) | Magic Synth Stinger Glassine Multi Tone Burs (SFX) | Pro Sound Effects, licensed by Roblox |
+| UiClick | [9118138365](https://create.roblox.com/store/asset/9118138365) | Relay Clicks 9 (SFX) | Pro Sound Effects, licensed by Roblox |
 
-These are first sounds for M2. The full set (music by wave, the boss theme, PERFECT and the rest) comes in M4 (#46); original or commissioned audio replaces any of these by changing the id in `SoundBank` and the row here.
+## Music
+
+| SoundBank name | Asset | Name on the Creator Store | Source / licence |
+|---|---|---|---|
+| MusicCalm | [1837768444](https://create.roblox.com/store/asset/1837768444) | Coin Bonus (a) | APM Music (`APMOfficial`, *Chiptune*), licensed by Roblox |
+| MusicMid | [1837768356](https://create.roblox.com/store/asset/1837768356) | High Score (a) | APM Music (`APMOfficial`, *Chiptune*), licensed by Roblox |
+| MusicIntense | [1837768352](https://create.roblox.com/store/asset/1837768352) | Retro Gamer (a) | APM Music (`APMOfficial`, *Chiptune*), licensed by Roblox |
+| MusicBoss | [1837768323](https://create.roblox.com/store/asset/1837768323) | Final Boss (a) | APM Music (`APMOfficial`, *Chiptune*), licensed by Roblox |

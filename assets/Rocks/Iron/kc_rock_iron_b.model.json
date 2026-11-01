@@ -1,0 +1,239 @@
+{
+  "className": "Model",
+  "children": [
+    {
+      "name": "Body",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          1.64,
+          1.64,
+          1.64
+        ],
+        "Position": [
+          0,
+          0,
+          0
+        ],
+        "Color": [
+          0.4549,
+          0.5294,
+          0.6392
+        ],
+        "Material": "SmoothPlastic",
+        "Orientation": [
+          0,
+          45,
+          0
+        ]
+      }
+    },
+    {
+      "name": "Strap1",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          1.74,
+          0.26,
+          0.34
+        ],
+        "Position": [
+          0,
+          0.78,
+          0
+        ],
+        "Color": [
+          0.2353,
+          0.2745,
+          0.3451
+        ],
+        "Material": "SmoothPlastic",
+        "Orientation": [
+          0,
+          45,
+          0
+        ]
+      }
+    },
+    {
+      "name": "Strap2",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.34,
+          0.26,
+          1.74
+        ],
+        "Position": [
+          0,
+          0.78,
+          0
+        ],
+        "Color": [
+          0.2353,
+          0.2745,
+          0.3451
+        ],
+        "Material": "SmoothPlastic",
+        "Orientation": [
+          0,
+          45,
+          0
+        ]
+      }
+    },
+    {
+      "name": "Rivet1",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.32,
+          0.32,
+          0.32
+        ],
+        "Position": [
+          -0.8202,
+          0.82,
+          -0.0
+        ],
+        "Color": [
+          0.2353,
+          0.2745,
+          0.3451
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Rivet2",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.32,
+          0.32,
+          0.32
+        ],
+        "Position": [
+          -0.0,
+          0.82,
+          0.8202
+        ],
+        "Color": [
+          0.2353,
+          0.2745,
+          0.3451
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Rivet3",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.32,
+          0.32,
+          0.32
+        ],
+        "Position": [
+          0.0,
+          0.82,
+          -0.8202
+        ],
+        "Color": [
+          0.2353,
+          0.2745,
+          0.3451
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Rivet4",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.32,
+          0.32,
+          0.32
+        ],
+        "Position": [
+          0.8202,
+          0.82,
+          0.0
+        ],
+        "Color": [
+          0.2353,
+          0.2745,
+          0.3451
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Outline",
+      "className": "Highlight",
+      "properties": {
+        "OutlineColor": [
+          0,
+          0,
+          0
+        ],
+        "OutlineTransparency": 0,
+        "FillColor": [
+          1.0,
+          0.3098,
+          0.8471
+        ],
+        "FillTransparency": 1,
+        "DepthMode": "Occluded"
+      }
+    }
+  ]
+}

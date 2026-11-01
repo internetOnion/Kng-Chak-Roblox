@@ -12,9 +12,9 @@
         "CanTouch": false,
         "CanQuery": false,
         "Size": [
-          2.2,
-          1,
-          1.1
+          0.82,
+          0.72,
+          0.82
         ],
         "Position": [
           0,
@@ -22,21 +22,21 @@
           0
         ],
         "Color": [
-          0.9098,
-          0.698,
-          0.4784
+          0.7882,
+          0.5451,
+          0.3333
         ],
         "Material": "SmoothPlastic",
         "Orientation": [
-          0,
-          35,
-          15
+          18,
+          32,
+          -12
         ]
       }
     },
     {
-      "name": "BodyWedge",
-      "className": "WedgePart",
+      "name": "Accent",
+      "className": "Part",
       "properties": {
         "TopSurface": "Smooth",
         "BottomSurface": "Smooth",
@@ -45,45 +45,22 @@
         "CanTouch": false,
         "CanQuery": false,
         "Size": [
-          1.1,
-          1,
-          1.2
+          0.34,
+          0.34,
+          0.34
         ],
         "Position": [
-          1.1,
           0,
-          -0.6
+          0.34,
+          0
         ],
         "Color": [
-          0.9098,
-          0.698,
-          0.4784
+          0.5608,
+          0.3608,
+          0.2039
         ],
         "Material": "SmoothPlastic",
-        "Orientation": [
-          0,
-          35,
-          0
-        ]
-      }
-    },
-    {
-      "name": "Outline",
-      "className": "Highlight",
-      "properties": {
-        "OutlineColor": [
-          0,
-          0,
-          0
-        ],
-        "OutlineTransparency": 0,
-        "FillColor": [
-          1.0,
-          0.3098,
-          0.8471
-        ],
-        "FillTransparency": 1,
-        "DepthMode": "Occluded"
+        "Shape": "Ball"
       }
     }
   ]

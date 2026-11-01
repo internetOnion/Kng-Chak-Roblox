@@ -1,191 +1,717 @@
 --!strict
 --[[
-	Overlay: the start, pause and results screens. A tap or click anywhere continues.
+	Overlay: Toy Box Title, Pause and Results menus in the brand fonts (#48).
 
-	    local overlay = Overlay.new(playerGui)
-	    overlay:Show("KNG CHAK", "Tap to start", start, { { Text = "Controls", OnTap = showControls } })
-	    overlay:Show("PAUSED", "Tap to resume", resume, {
-	        { Text = "Controls", OnTap = showControls, Color = Color3.fromHex("#2f2d80") },
-	        { Text = "Restart call", OnTap = restart },
-	    })
+	    local overlay = Overlay.new(playerGui, function() sounds:Play("UiClick") end, toggleMusic)
+	    overlay:SetMusicMuted(false)
+	    overlay:ShowStart(onStart, onControls)
+	    overlay:ShowPause(pauseStats, pauseActions)
+	    overlay:ShowResults(summary, lastWave, resultsActions)
 	    overlay:Hide()
 
-	Optional secondary actions sit as rounded pill buttons in a row under the body text.
+	Uses Fonts.Display (FredokaOne, standing in for Atomic Age) with thick black
+	strokes for headings, buttons and bold outlined stat numbers, and Fonts.TextBold
+	(Montserrat, standing in for Jost) for crisp captions. Scales automatically via
+	UIScale inside CoreUISafeInsets so small landscape phones stay spacious and clear
+	of notches, Roblox's top-left button and the bottom DevBar.
 ]]
+
+local Workspace = game:GetService("Workspace")
 
 local Fonts = require(script.Parent.Fonts)
 
-local MAX_EXTRAS = 2
-local DEFAULT_PILL = Color3.fromHex("#ff3b3b")
+-- Toy Box UI palette from docs/art-guide.md
+local SCRIM = Color3.fromHex("#14133d")
+local CARD = Color3.fromHex("#1b1a5c")
+local STAGE = Color3.fromHex("#12113a")
+local STAGE_BORDER = Color3.fromHex("#2f2d80")
+local OUTLINE = Color3.fromHex("#000000")
+local WHITE = Color3.fromHex("#ffffff")
+local SUBTEXT = Color3.fromHex("#d0ceff")
+local GOLD = Color3.fromHex("#ffe066")
+local RED = Color3.fromHex("#ff3b3b")
+local CORAL = Color3.fromHex("#ff4d5e")
+local GREEN = Color3.fromHex("#5ee05e")
+local AMBER = Color3.fromHex("#ff9a1f")
+local CYAN = Color3.fromHex("#6ff3ff")
+local SHIELD_CYAN = Color3.fromHex("#bff6ff")
+local PINK = Color3.fromHex("#ff4fd8")
+local INDIGO = Color3.fromHex("#2f2d80")
+local SLATE_INDIGO = Color3.fromHex("#23216b")
+
+export type PauseInfo = {
+	Wave: number,
+	LastWave: number,
+	IsBoss: boolean,
+	PlanetHp: number,
+	PlanetMaxHp: number,
+	PlanetShield: number,
+	Score: number,
+}
+
+export type PauseActions = {
+	OnResume: () -> (),
+	OnControls: () -> (),
+	OnRestart: () -> (),
+	OnTitle: () -> (),
+}
+
+export type ResultsSummary = {
+	Won: boolean,
+	Wave: number,
+	Score: number,
+	BestCombo: number,
+	Perfects: number,
+	Time: number,
+}
+
+export type ResultsActions = {
+	OnPlayAgain: () -> (),
+	OnControls: () -> (),
+	OnTitle: () -> (),
+}
+
+type Mode = "None" | "Start" | "Pause" | "Results"
 
 local Overlay = {}
 Overlay.__index = Overlay
 
-export type Extra = {
-	Text: string,
-	OnTap: () -> (),
-	Color: Color3?,
-}
-
 export type Overlay = typeof(setmetatable(
 	{} :: {
-		_gui: ScreenGui,
-		_title: TextLabel,
-		_body: TextLabel,
-		_row: Frame,
-		_pills: { TextButton },
-		_onTap: (() -> ())?,
-		_onExtras: { (() -> ())? },
+		_scrimGui: ScreenGui,
+		_safeGui: ScreenGui,
+		_scrimButton: TextButton,
+		_startView: Frame,
+		_pauseCard: Frame,
+		_resultsCard: Frame,
+		_pauseWaveValue: TextLabel,
+		_pauseHpValue: TextLabel,
+		_pauseScoreValue: TextLabel,
+		_resultsTitle: TextLabel,
+		_resultsSub: TextLabel,
+		_resultsScoreValue: TextLabel,
+		_resultsComboValue: TextLabel,
+		_resultsPerfectValue: TextLabel,
+		_musicButtons: { TextButton },
+		_mode: Mode,
 		_suppressed: boolean,
+		_onClickSound: (() -> ())?,
+		_onToggleMusic: (() -> ())?,
+		_onScrimTap: (() -> ())?,
+		_actions: { [string]: (() -> ())? },
 	},
 	Overlay
 ))
 
-local function makePill(parent: Instance, index: number): TextButton
-	local pill = Instance.new("TextButton")
-	pill.Name = `Extra{index}`
-	pill.LayoutOrder = index
-	pill.Size = UDim2.fromOffset(186, 46)
-	pill.BackgroundColor3 = DEFAULT_PILL
-	pill.FontFace = Fonts.TextBold
-	pill.TextSize = 20
-	pill.TextColor3 = Color3.fromHex("#ffffff")
-	pill.Visible = false
+local function round(parent: Instance, px: number)
 	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0.5, 0)
-	corner.Parent = pill
-	local stroke = Instance.new("UIStroke")
-	stroke.Thickness = 3
-	stroke.Color = Color3.fromHex("#000000")
-	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	stroke.Parent = pill
-	pill.Parent = parent
-	return pill
+	corner.CornerRadius = UDim.new(0, px)
+	corner.Parent = parent
 end
 
-function Overlay.new(parent: Instance): Overlay
-	local gui = Instance.new("ScreenGui")
-	gui.Name = "Overlay"
-	gui.ResetOnSpawn = false
-	gui.DisplayOrder = 10
-	gui.ScreenInsets = Enum.ScreenInsets.None -- the dimmed backdrop covers the whole screen; the text sits mid-screen
-	gui.Enabled = false
+local function border(parent: Instance, thickness: number, color: Color3, mode: Enum.ApplyStrokeMode?): UIStroke
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = thickness
+	stroke.Color = color
+	stroke.ApplyStrokeMode = mode or Enum.ApplyStrokeMode.Border
+	stroke.LineJoinMode = Enum.LineJoinMode.Round
+	stroke.Parent = parent
+	return stroke
+end
 
-	-- The whole screen is the button, so a thumb anywhere continues.
-	local button = Instance.new("TextButton")
-	button.Name = "Continue"
-	button.Size = UDim2.fromScale(1, 1)
-	button.BackgroundColor3 = Color3.fromHex("#1b1a5c")
-	button.BackgroundTransparency = 0.35
-	button.Text = ""
-	button.AutoButtonColor = false
-	button.Parent = gui
-
-	local title = Instance.new("TextLabel")
-	title.Name = "Title"
-	title.AnchorPoint = Vector2.new(0.5, 1)
-	title.Position = UDim2.fromScale(0.5, 0.46)
-	title.Size = UDim2.new(1, -32, 0, 64)
-	title.BackgroundTransparency = 1
-	title.FontFace = Fonts.Display
-	title.TextSize = 48
-	title.TextColor3 = Color3.fromHex("#ffe066")
-	title.TextStrokeTransparency = 0.3
-	title.Parent = button
-
-	local body = Instance.new("TextLabel")
-	body.Name = "Body"
-	body.AnchorPoint = Vector2.new(0.5, 0)
-	body.Position = UDim2.fromScale(0.5, 0.5)
-	body.Size = UDim2.new(1, -32, 0, 96)
-	body.BackgroundTransparency = 1
-	body.FontFace = Fonts.Text
-	body.TextSize = 25
-	body.TextColor3 = Color3.fromHex("#ffffff")
-	body.TextWrapped = true
-	body.Parent = button
-
-	local row = Instance.new("Frame")
-	row.Name = "Extras"
-	row.AnchorPoint = Vector2.new(0.5, 0)
-	row.Position = UDim2.new(0.5, 0, 0.5, 102)
-	row.Size = UDim2.new(1, -32, 0, 48)
-	row.BackgroundTransparency = 1
-	row.Visible = false
-	row.Parent = button
-
-	local layout = Instance.new("UIListLayout")
-	layout.FillDirection = Enum.FillDirection.Horizontal
-	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	layout.Padding = UDim.new(0, 14)
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Parent = row
-
-	local pills: { TextButton } = {}
-	for i = 1, MAX_EXTRAS do
-		table.insert(pills, makePill(row, i))
-	end
-
-	local self = setmetatable({
-		_gui = gui,
-		_title = title,
-		_body = body,
-		_row = row,
-		_pills = pills,
-		_onTap = nil :: (() -> ())?,
-		_onExtras = {} :: { (() -> ())? },
-		_suppressed = false,
-	}, Overlay)
-
-	local function take(action: (() -> ())?)
-		if action then
-			self._onTap = nil
-			table.clear(self._onExtras)
-			action()
+local function formatInt(n: number): string
+	local whole = tostring(math.floor(math.max(0, n) + 0.5))
+	local formatted = string.gsub(whole, "^(-?%d+)(%d%d%d)", "%1,%2")
+	while true do
+		local nextStr, count = string.gsub(formatted, "^(-?%d+)(%d%d%d)", "%1,%2")
+		formatted = nextStr
+		if count == 0 then
+			break
 		end
 	end
-	button.Activated:Connect(function()
-		take(self._onTap)
-	end)
-	for i, pill in pills do
-		pill.Activated:Connect(function()
-			take(self._onExtras[i])
-		end)
+	return formatted
+end
+
+local function formatClock(seconds: number): string
+	local total = math.max(0, math.floor(seconds))
+	return string.format("%d:%02d", total // 60, total % 60)
+end
+
+-- Builds a chunky Toy Box button with rounded corners, thick black border and glossy top sheen.
+local function makeToyButton(
+	parent: Instance,
+	name: string,
+	text: string,
+	size: UDim2,
+	fill: Color3,
+	textSize: number,
+	layoutOrder: number,
+	onTap: () -> ()
+): TextButton
+	local btn = Instance.new("TextButton")
+	btn.Name = name
+	btn.LayoutOrder = layoutOrder
+	btn.Size = size
+	btn.BackgroundColor3 = fill
+	btn.AutoButtonColor = true
+	btn.Text = ""
+	round(btn, 14)
+	border(btn, 3.5, OUTLINE, Enum.ApplyStrokeMode.Border)
+
+	-- Moulded plastic top highlight strip
+	local sheen = Instance.new("Frame")
+	sheen.Name = "Sheen"
+	sheen.AnchorPoint = Vector2.new(0.5, 0)
+	sheen.Position = UDim2.new(0.5, 0, 0, 4)
+	sheen.Size = UDim2.new(1, -16, 0, 6)
+	sheen.BackgroundColor3 = WHITE
+	sheen.BackgroundTransparency = 0.78
+	sheen.BorderSizePixel = 0
+	round(sheen, 4)
+	sheen.Parent = btn
+
+	local label = Instance.new("TextLabel")
+	label.Name = "Label"
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.FontFace = Fonts.Display
+	label.Text = text
+	label.TextSize = textSize
+	label.TextColor3 = WHITE
+	border(label, 2.5, OUTLINE, Enum.ApplyStrokeMode.Contextual)
+	label.Parent = btn
+
+	btn.Activated:Connect(onTap)
+	btn.Parent = parent
+	return btn
+end
+
+local function makeStatCell(
+	parent: Instance,
+	name: string,
+	caption: string,
+	valueColor: Color3,
+	order: number
+): TextLabel
+	local cell = Instance.new("Frame")
+	cell.Name = name
+	cell.LayoutOrder = order
+	cell.Size = UDim2.new(0.32, -6, 1, 0)
+	cell.BackgroundColor3 = STAGE
+	round(cell, 12)
+	border(cell, 2, STAGE_BORDER, Enum.ApplyStrokeMode.Border)
+	cell.Parent = parent
+
+	local value = Instance.new("TextLabel")
+	value.Name = "Value"
+	value.AnchorPoint = Vector2.new(0.5, 0)
+	value.Position = UDim2.new(0.5, 0, 0, 8)
+	value.Size = UDim2.new(1, -10, 0, 38)
+	value.BackgroundTransparency = 1
+	value.FontFace = Fonts.Display
+	value.TextSize = 30
+	value.TextScaled = true
+	value.TextColor3 = valueColor
+	local constraint = Instance.new("UITextSizeConstraint")
+	constraint.MaxTextSize = 30
+	constraint.MinTextSize = 16
+	constraint.Parent = value
+	border(value, 2.8, OUTLINE, Enum.ApplyStrokeMode.Contextual)
+	value.Parent = cell
+
+	local label = Instance.new("TextLabel")
+	label.Name = "Caption"
+	label.AnchorPoint = Vector2.new(0.5, 1)
+	label.Position = UDim2.new(0.5, 0, 1, -8)
+	label.Size = UDim2.new(1, -8, 0, 18)
+	label.BackgroundTransparency = 1
+	label.FontFace = Fonts.TextBold
+	label.Text = caption
+	label.TextSize = 13
+	label.TextColor3 = SUBTEXT
+	label.Parent = cell
+
+	return value
+end
+
+function Overlay.new(parent: Instance, onClickSound: (() -> ())?, onToggleMusic: (() -> ())?): Overlay
+	-- Full-bleed scrim Gui (covers notches cleanly without shifting safe-inset layout)
+	local scrimGui = Instance.new("ScreenGui")
+	scrimGui.Name = "OverlayScrim"
+	scrimGui.ResetOnSpawn = false
+	scrimGui.DisplayOrder = 9
+	scrimGui.ScreenInsets = Enum.ScreenInsets.None
+	scrimGui.Enabled = false
+
+	local scrimButton = Instance.new("TextButton")
+	scrimButton.Name = "Scrim"
+	scrimButton.Size = UDim2.fromScale(1, 1)
+	scrimButton.BackgroundColor3 = SCRIM
+	scrimButton.BackgroundTransparency = 0.68
+	scrimButton.Text = ""
+	scrimButton.AutoButtonColor = false
+	scrimButton.Parent = scrimGui
+
+	-- Safe-area Gui for crisp Toy Box menus and adaptive phone scaling
+	local safeGui = Instance.new("ScreenGui")
+	safeGui.Name = "Overlay"
+	safeGui.ResetOnSpawn = false
+	safeGui.DisplayOrder = 10
+	safeGui.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
+	safeGui.Enabled = false
+
+	local root = Instance.new("Frame")
+	root.Name = "Root"
+	root.AnchorPoint = Vector2.new(0.5, 0.5)
+	root.Position = UDim2.fromScale(0.5, 0.5)
+	root.Size = UDim2.fromScale(1, 1)
+	root.BackgroundTransparency = 1
+	root.Parent = safeGui
+
+	local uiScale = Instance.new("UIScale")
+	uiScale.Parent = root
+
+	local function updateScale()
+		local cam = Workspace.CurrentCamera
+		if not cam then
+			return
+		end
+		local vp = cam.ViewportSize
+		if vp.X > 0 and vp.Y > 0 then
+			uiScale.Scale = math.clamp(math.min(vp.X / 812, vp.Y / 390), 0.72, 1.12)
+		end
 	end
-	gui.Parent = parent
+	updateScale()
+	Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+		local cam = Workspace.CurrentCamera
+		if cam then
+			cam:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
+			updateScale()
+		end
+	end)
+	if Workspace.CurrentCamera then
+		Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
+	end
+
+	local actions: { [string]: (() -> ())? } = {}
+	local self = setmetatable({
+		_scrimGui = scrimGui,
+		_safeGui = safeGui,
+		_scrimButton = scrimButton,
+		_startView = nil :: any,
+		_pauseCard = nil :: any,
+		_resultsCard = nil :: any,
+		_pauseWaveValue = nil :: any,
+		_pauseHpValue = nil :: any,
+		_pauseScoreValue = nil :: any,
+		_resultsTitle = nil :: any,
+		_resultsSub = nil :: any,
+		_resultsScoreValue = nil :: any,
+		_resultsComboValue = nil :: any,
+		_resultsPerfectValue = nil :: any,
+		_musicButtons = {},
+		_mode = "None" :: Mode,
+		_suppressed = false,
+		_onClickSound = onClickSound,
+		_onToggleMusic = onToggleMusic,
+		_onScrimTap = nil :: (() -> ())?,
+		_actions = actions,
+	}, Overlay)
+
+	local function fire(key: string)
+		local fn = self._actions[key]
+		if not fn then
+			return
+		end
+		if self._onClickSound then
+			self._onClickSound()
+		end
+		fn()
+	end
+
+	local function fireMusicToggle()
+		local fn = self._onToggleMusic
+		if not fn then
+			return
+		end
+		if self._onClickSound then
+			self._onClickSound()
+		end
+		fn()
+	end
+
+	scrimButton.Activated:Connect(function()
+		local fn = self._onScrimTap
+		if fn then
+			if self._onClickSound then
+				self._onClickSound()
+			end
+			fn()
+		end
+	end)
+
+	-- =========================================================================
+	-- 1. TITLE SCREEN (framed around the live spinning Ember globe in centre)
+	-- =========================================================================
+	local startView = Instance.new("Frame")
+	startView.Name = "StartView"
+	startView.Size = UDim2.fromScale(1, 1)
+	startView.BackgroundTransparency = 1
+	startView.Visible = false
+	startView.Parent = root
+
+	local heroHeader = Instance.new("Frame")
+	heroHeader.Name = "HeroHeader"
+	heroHeader.AnchorPoint = Vector2.new(0.5, 0)
+	heroHeader.Position = UDim2.new(0.5, 0, 0, 10)
+	heroHeader.Size = UDim2.fromOffset(520, 104)
+	heroHeader.BackgroundTransparency = 1
+	heroHeader.Parent = startView
+
+	local brandTitle = Instance.new("TextLabel")
+	brandTitle.Name = "BrandTitle"
+	brandTitle.AnchorPoint = Vector2.new(0.5, 0)
+	brandTitle.Position = UDim2.fromScale(0.5, 0)
+	brandTitle.Size = UDim2.new(1, 0, 0, 66)
+	brandTitle.BackgroundTransparency = 1
+	brandTitle.FontFace = Fonts.Display
+	brandTitle.Text = "KNG CHAK"
+	brandTitle.TextSize = 60
+	brandTitle.TextColor3 = GOLD
+	border(brandTitle, 4.5, OUTLINE, Enum.ApplyStrokeMode.Contextual)
+	brandTitle.Parent = heroHeader
+
+	local brandTagline = Instance.new("TextLabel")
+	brandTagline.Name = "Tagline"
+	brandTagline.AnchorPoint = Vector2.new(0.5, 0)
+	brandTagline.Position = UDim2.new(0.5, 0, 0, 68)
+	brandTagline.Size = UDim2.new(1, 0, 0, 26)
+	brandTagline.BackgroundTransparency = 1
+	brandTagline.FontFace = Fonts.TextBold
+	brandTagline.Text = "Defend Planet Ember · Push, Spear & Slingshot"
+	brandTagline.TextSize = 18
+	brandTagline.TextColor3 = SUBTEXT
+	border(brandTagline, 2, OUTLINE, Enum.ApplyStrokeMode.Contextual)
+	brandTagline.Parent = heroHeader
+
+	local startDock = Instance.new("Frame")
+	startDock.Name = "ActionDock"
+	startDock.AnchorPoint = Vector2.new(0.5, 1)
+	startDock.Position = UDim2.new(0.5, 0, 1, -28)
+	startDock.Size = UDim2.fromOffset(580, 60)
+	startDock.BackgroundTransparency = 1
+	startDock.Parent = startView
+
+	local dockLayout = Instance.new("UIListLayout")
+	dockLayout.FillDirection = Enum.FillDirection.Horizontal
+	dockLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	dockLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	dockLayout.Padding = UDim.new(0, 14)
+	dockLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	dockLayout.Parent = startDock
+
+	makeToyButton(startDock, "StartCall", "START CALL", UDim2.fromOffset(236, 58), RED, 26, 1, function()
+		fire("StartPrimary")
+	end)
+	makeToyButton(startDock, "Controls", "CONTROLS", UDim2.fromOffset(156, 52), INDIGO, 19, 2, function()
+		fire("StartControls")
+	end)
+	local startMusicBtn =
+		makeToyButton(startDock, "Music", "MUSIC: ON", UDim2.fromOffset(156, 52), INDIGO, 19, 3, fireMusicToggle)
+
+	-- =========================================================================
+	-- 2. PAUSE CARD
+	-- =========================================================================
+	local pauseCard = Instance.new("Frame")
+	pauseCard.Name = "PauseCard"
+	pauseCard.AnchorPoint = Vector2.new(0.5, 0.5)
+	pauseCard.Position = UDim2.fromScale(0.5, 0.5)
+	pauseCard.Size = UDim2.fromOffset(556, 296)
+	pauseCard.BackgroundColor3 = CARD
+	pauseCard.Visible = false
+	round(pauseCard, 16)
+	border(pauseCard, 4, OUTLINE, Enum.ApplyStrokeMode.Border)
+	pauseCard.Parent = root
+
+	local pauseTitle = Instance.new("TextLabel")
+	pauseTitle.Name = "Title"
+	pauseTitle.AnchorPoint = Vector2.new(0.5, 0)
+	pauseTitle.Position = UDim2.new(0.5, 0, 0, 16)
+	pauseTitle.Size = UDim2.new(1, -32, 0, 46)
+	pauseTitle.BackgroundTransparency = 1
+	pauseTitle.FontFace = Fonts.Display
+	pauseTitle.Text = "PAUSED"
+	pauseTitle.TextSize = 40
+	pauseTitle.TextColor3 = GOLD
+	border(pauseTitle, 3.5, OUTLINE, Enum.ApplyStrokeMode.Contextual)
+	pauseTitle.Parent = pauseCard
+
+	local pauseStats = Instance.new("Frame")
+	pauseStats.Name = "StatsRow"
+	pauseStats.AnchorPoint = Vector2.new(0.5, 0)
+	pauseStats.Position = UDim2.new(0.5, 0, 0, 72)
+	pauseStats.Size = UDim2.new(1, -40, 0, 74)
+	pauseStats.BackgroundTransparency = 1
+	pauseStats.Parent = pauseCard
+
+	local pauseStatsLayout = Instance.new("UIListLayout")
+	pauseStatsLayout.FillDirection = Enum.FillDirection.Horizontal
+	pauseStatsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	pauseStatsLayout.Padding = UDim.new(0, 10)
+	pauseStatsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	pauseStatsLayout.Parent = pauseStats
+
+	local pauseWaveValue = makeStatCell(pauseStats, "WaveCell", "CALL STAGE", GOLD, 1)
+	local pauseHpValue = makeStatCell(pauseStats, "HpCell", "EMBER HP", GREEN, 2)
+	local pauseScoreValue = makeStatCell(pauseStats, "ScoreCell", "SCORE", WHITE, 3)
+
+	makeToyButton(pauseCard, "Resume", "RESUME CALL", UDim2.new(1, -40, 0, 54), GREEN, 24, 1, function()
+		fire("PauseResume")
+	end).Position =
+		UDim2.new(0.5, 0, 0, 162)
+	local resumeBtn = pauseCard:FindFirstChild("Resume") :: TextButton
+	resumeBtn.AnchorPoint = Vector2.new(0.5, 0)
+
+	local pauseRow = Instance.new("Frame")
+	pauseRow.Name = "SecondaryRow"
+	pauseRow.AnchorPoint = Vector2.new(0.5, 0)
+	pauseRow.Position = UDim2.new(0.5, 0, 0, 228)
+	pauseRow.Size = UDim2.new(1, -40, 0, 48)
+	pauseRow.BackgroundTransparency = 1
+	pauseRow.Parent = pauseCard
+
+	local pauseRowLayout = Instance.new("UIListLayout")
+	pauseRowLayout.FillDirection = Enum.FillDirection.Horizontal
+	pauseRowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	pauseRowLayout.Padding = UDim.new(0, 8)
+	pauseRowLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	pauseRowLayout.Parent = pauseRow
+
+	makeToyButton(pauseRow, "Controls", "CONTROLS", UDim2.fromOffset(126, 46), INDIGO, 17, 1, function()
+		fire("PauseControls")
+	end)
+	local pauseMusicBtn =
+		makeToyButton(pauseRow, "Music", "MUSIC: ON", UDim2.fromOffset(134, 46), INDIGO, 17, 2, fireMusicToggle)
+	makeToyButton(pauseRow, "Restart", "RESTART", UDim2.fromOffset(120, 46), RED, 17, 3, function()
+		fire("PauseRestart")
+	end)
+	makeToyButton(pauseRow, "TitleBtn", "TITLE", UDim2.fromOffset(112, 46), SLATE_INDIGO, 17, 4, function()
+		fire("PauseTitle")
+	end)
+
+	-- =========================================================================
+	-- 3. RESULTS CARD
+	-- =========================================================================
+	local resultsCard = Instance.new("Frame")
+	resultsCard.Name = "ResultsCard"
+	resultsCard.AnchorPoint = Vector2.new(0.5, 0.5)
+	resultsCard.Position = UDim2.fromScale(0.5, 0.5)
+	resultsCard.Size = UDim2.fromOffset(576, 304)
+	resultsCard.BackgroundColor3 = CARD
+	resultsCard.Visible = false
+	round(resultsCard, 16)
+	border(resultsCard, 4, OUTLINE, Enum.ApplyStrokeMode.Border)
+	resultsCard.Parent = root
+
+	local resultsTitle = Instance.new("TextLabel")
+	resultsTitle.Name = "Title"
+	resultsTitle.AnchorPoint = Vector2.new(0.5, 0)
+	resultsTitle.Position = UDim2.new(0.5, 0, 0, 14)
+	resultsTitle.Size = UDim2.new(1, -32, 0, 48)
+	resultsTitle.BackgroundTransparency = 1
+	resultsTitle.FontFace = Fonts.Display
+	resultsTitle.TextSize = 42
+	resultsTitle.TextColor3 = GREEN
+	border(resultsTitle, 3.5, OUTLINE, Enum.ApplyStrokeMode.Contextual)
+	resultsTitle.Parent = resultsCard
+
+	local resultsSub = Instance.new("TextLabel")
+	resultsSub.Name = "Subtitle"
+	resultsSub.AnchorPoint = Vector2.new(0.5, 0)
+	resultsSub.Position = UDim2.new(0.5, 0, 0, 62)
+	resultsSub.Size = UDim2.new(1, -32, 0, 24)
+	resultsSub.BackgroundTransparency = 1
+	resultsSub.FontFace = Fonts.TextBold
+	resultsSub.TextSize = 17
+	resultsSub.TextColor3 = SUBTEXT
+	resultsSub.Parent = resultsCard
+
+	local resultsStats = Instance.new("Frame")
+	resultsStats.Name = "StatsRow"
+	resultsStats.AnchorPoint = Vector2.new(0.5, 0)
+	resultsStats.Position = UDim2.new(0.5, 0, 0, 96)
+	resultsStats.Size = UDim2.new(1, -40, 0, 82)
+	resultsStats.BackgroundTransparency = 1
+	resultsStats.Parent = resultsCard
+
+	local resultsStatsLayout = Instance.new("UIListLayout")
+	resultsStatsLayout.FillDirection = Enum.FillDirection.Horizontal
+	resultsStatsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	resultsStatsLayout.Padding = UDim.new(0, 10)
+	resultsStatsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	resultsStatsLayout.Parent = resultsStats
+
+	local resultsScoreValue = makeStatCell(resultsStats, "ScoreCell", "FINAL SCORE", GOLD, 1)
+	local resultsComboValue = makeStatCell(resultsStats, "ComboCell", "BEST COMBO", CYAN, 2)
+	local resultsPerfectValue = makeStatCell(resultsStats, "PerfectCell", "PERFECTS", PINK, 3)
+
+	local resultsActionsRow = Instance.new("Frame")
+	resultsActionsRow.Name = "ActionRow"
+	resultsActionsRow.AnchorPoint = Vector2.new(0.5, 0)
+	resultsActionsRow.Position = UDim2.new(0.5, 0, 0, 198)
+	resultsActionsRow.Size = UDim2.new(1, -40, 0, 84)
+	resultsActionsRow.BackgroundTransparency = 1
+	resultsActionsRow.Parent = resultsCard
+
+	local resultsActionsLayout = Instance.new("UIListLayout")
+	resultsActionsLayout.FillDirection = Enum.FillDirection.Horizontal
+	resultsActionsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	resultsActionsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	resultsActionsLayout.Padding = UDim.new(0, 8)
+	resultsActionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	resultsActionsLayout.Parent = resultsActionsRow
+
+	makeToyButton(resultsActionsRow, "PlayAgain", "PLAY AGAIN", UDim2.fromOffset(196, 56), RED, 22, 1, function()
+		fire("ResultsPlayAgain")
+	end)
+	makeToyButton(resultsActionsRow, "Controls", "CONTROLS", UDim2.fromOffset(110, 48), INDIGO, 16, 2, function()
+		fire("ResultsControls")
+	end)
+	local resultsMusicBtn = makeToyButton(
+		resultsActionsRow,
+		"Music",
+		"MUSIC: ON",
+		UDim2.fromOffset(120, 48),
+		INDIGO,
+		16,
+		3,
+		fireMusicToggle
+	)
+	makeToyButton(resultsActionsRow, "TitleBtn", "TITLE", UDim2.fromOffset(86, 48), SLATE_INDIGO, 16, 4, function()
+		fire("ResultsTitle")
+	end)
+
+	self._startView = startView
+	self._pauseCard = pauseCard
+	self._resultsCard = resultsCard
+	self._pauseWaveValue = pauseWaveValue
+	self._pauseHpValue = pauseHpValue
+	self._pauseScoreValue = pauseScoreValue
+	self._resultsTitle = resultsTitle
+	self._resultsSub = resultsSub
+	self._resultsScoreValue = resultsScoreValue
+	self._resultsComboValue = resultsComboValue
+	self._resultsPerfectValue = resultsPerfectValue
+	self._musicButtons = { startMusicBtn, pauseMusicBtn, resultsMusicBtn }
+
+	scrimGui.Parent = parent
+	safeGui.Parent = parent
 	return self
 end
 
-function Overlay.Show(self: Overlay, title: string, body: string, onTap: () -> (), extras: { Extra }?, color: Color3?)
-	self._title.Text = title
-	self._title.TextColor3 = color or Color3.fromHex("#ffe066")
-	self._body.Text = body
-	self._onTap = onTap
-	table.clear(self._onExtras)
-	local list = extras or {}
-	self._row.Visible = #list > 0
-	for i, pill in self._pills do
-		local item = list[i]
-		pill.Visible = item ~= nil
-		if item then
-			pill.Text = item.Text
-			pill.BackgroundColor3 = item.Color or DEFAULT_PILL
-			self._onExtras[i] = item.OnTap
-		end
+local function refreshVisibility(self: Overlay)
+	local visible = not self._suppressed and self._mode ~= "None"
+	self._scrimGui.Enabled = visible
+	self._safeGui.Enabled = visible
+	self._startView.Visible = self._mode == "Start"
+	self._pauseCard.Visible = self._mode == "Pause"
+	self._resultsCard.Visible = self._mode == "Results"
+end
+
+function Overlay.ShowStart(self: Overlay, onStart: () -> (), onControls: () -> ())
+	table.clear(self._actions)
+	self._actions.StartPrimary = onStart
+	self._actions.StartControls = onControls
+	self._onScrimTap = onStart
+	self._scrimButton.BackgroundTransparency = 0.72 -- light vignette so spinning Ember shines through
+	self._mode = "Start"
+	refreshVisibility(self)
+end
+
+function Overlay.ShowPause(self: Overlay, info: PauseInfo, actions: PauseActions)
+	table.clear(self._actions)
+	self._actions.PauseResume = actions.OnResume
+	self._actions.PauseControls = actions.OnControls
+	self._actions.PauseRestart = actions.OnRestart
+	self._actions.PauseTitle = actions.OnTitle
+	self._onScrimTap = actions.OnResume
+	self._scrimButton.BackgroundTransparency = 0.36
+
+	local waveText = if info.IsBoss then "INFERNO" else `{math.max(1, info.Wave)} / {info.LastWave}`
+	self._pauseWaveValue.Text = waveText
+	self._pauseWaveValue.TextColor3 = if info.IsBoss then CORAL else GOLD
+
+	local hpPct = if info.PlanetMaxHp > 0
+		then math.clamp(math.floor(info.PlanetHp / info.PlanetMaxHp * 100 + 0.5), 0, 100)
+		else 0
+	local shieldPct = math.floor(info.PlanetShield + 0.5)
+	if shieldPct > 0 then
+		self._pauseHpValue.Text = `{hpPct}% +{shieldPct}`
+		self._pauseHpValue.TextColor3 = SHIELD_CYAN
+	else
+		self._pauseHpValue.Text = `{hpPct}%`
+		self._pauseHpValue.TextColor3 = if hpPct > 60 then GREEN elseif hpPct > 30 then AMBER else CORAL
 	end
-	self._gui.Enabled = not self._suppressed
+
+	self._pauseScoreValue.Text = formatInt(info.Score)
+
+	self._mode = "Pause"
+	refreshVisibility(self)
+end
+
+function Overlay.ShowResults(self: Overlay, summary: ResultsSummary, lastWave: number, actions: ResultsActions)
+	table.clear(self._actions)
+	self._actions.ResultsPlayAgain = actions.OnPlayAgain
+	self._actions.ResultsControls = actions.OnControls
+	self._actions.ResultsTitle = actions.OnTitle
+	self._onScrimTap = nil -- require explicit button tap on Results so thumbs mid-steering don't skip stats!
+	self._scrimButton.BackgroundTransparency = 0.34
+
+	self._resultsTitle.Text = if summary.Won then "CALL CLEARED!" else "PLANET LOST"
+	self._resultsTitle.TextColor3 = if summary.Won then GREEN else CORAL
+
+	local reached = if summary.Wave > lastWave then "The Inferno" else `Wave {math.max(1, summary.Wave)} of {lastWave}`
+	self._resultsSub.Text = `Reached {reached}  ·  Call time {formatClock(summary.Time)}`
+
+	self._resultsScoreValue.Text = formatInt(summary.Score)
+	self._resultsComboValue.Text = `×{summary.BestCombo}`
+	self._resultsPerfectValue.Text = tostring(summary.Perfects)
+
+	self._mode = "Results"
+	refreshVisibility(self)
 end
 
 function Overlay.Hide(self: Overlay)
-	self._onTap = nil
-	table.clear(self._onExtras)
-	self._gui.Enabled = false
+	self._mode = "None"
+	self._onScrimTap = nil
+	table.clear(self._actions)
+	refreshVisibility(self)
+end
+
+-- Updates the Music button state across Start, Pause and Results screens.
+function Overlay.SetMusicMuted(self: Overlay, muted: boolean)
+	local fill = if muted then STAGE else INDIGO
+	local text = if muted then "MUSIC: OFF" else "MUSIC: ON"
+	local textColor = if muted then SUBTEXT else WHITE
+	local sheenAlpha = if muted then 0.9 else 0.78
+	for _, btn in self._musicButtons do
+		btn.BackgroundColor3 = fill
+		local label = btn:FindFirstChild("Label") :: TextLabel?
+		if label then
+			label.Text = text
+			label.TextColor3 = textColor
+		end
+		local sheen = btn:FindFirstChild("Sheen") :: Frame?
+		if sheen then
+			sheen.BackgroundTransparency = sheenAlpha
+		end
+	end
 end
 
 -- Keeps the screen out of sight (while the style tile or controls card shows) without forgetting it.
 function Overlay.SetSuppressed(self: Overlay, suppressed: boolean)
 	self._suppressed = suppressed
-	self._gui.Enabled = not suppressed and self._onTap ~= nil
+	refreshVisibility(self)
 end
 
 return Overlay

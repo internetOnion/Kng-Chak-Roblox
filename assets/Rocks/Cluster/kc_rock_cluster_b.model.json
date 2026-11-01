@@ -12,14 +12,14 @@
         "CanTouch": false,
         "CanQuery": false,
         "Size": [
-          1.05,
-          1.05,
-          1.05
+          1.12,
+          1.12,
+          1.12
         ],
         "Position": [
-          -0.1943,
-          0.3,
-          0.4607
+          0,
+          0.08,
+          -0.48
         ],
         "Color": [
           0.698,
@@ -41,14 +41,14 @@
         "CanTouch": false,
         "CanQuery": false,
         "Size": [
-          1.05,
-          1.05,
-          1.05
+          1.04,
+          1.04,
+          1.04
         ],
         "Position": [
-          -0.4608,
-          0.0,
-          -0.194
+          -0.46,
+          0.04,
+          0.28
         ],
         "Color": [
           0.698,
@@ -70,14 +70,14 @@
         "CanTouch": false,
         "CanQuery": false,
         "Size": [
-          1.05,
-          1.05,
-          1.05
+          1.04,
+          1.04,
+          1.04
         ],
         "Position": [
-          0.1936,
-          0.3,
-          -0.461
+          0.46,
+          0.04,
+          0.28
         ],
         "Color": [
           0.698,
@@ -99,19 +99,77 @@
         "CanTouch": false,
         "CanQuery": false,
         "Size": [
-          1.05,
-          1.05,
-          1.05
+          0.96,
+          0.96,
+          0.96
         ],
         "Position": [
-          0.4611,
-          0.0,
-          0.1932
+          0,
+          0.46,
+          0.04
         ],
         "Color": [
           0.698,
           0.3725,
           0.8157
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Bud1",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.44,
+          0.44,
+          0.44
+        ],
+        "Position": [
+          -0.28,
+          0.48,
+          -0.22
+        ],
+        "Color": [
+          0.8353,
+          0.5412,
+          0.9412
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Bud2",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.44,
+          0.44,
+          0.44
+        ],
+        "Position": [
+          0.28,
+          0.48,
+          -0.22
+        ],
+        "Color": [
+          0.8353,
+          0.5412,
+          0.9412
         ],
         "Material": "SmoothPlastic",
         "Shape": "Ball"

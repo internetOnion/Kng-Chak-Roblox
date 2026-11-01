@@ -1,11 +1,11 @@
 --!strict
 --[[
-	SoundBank: every sound the game plays, by name, with how loud and at what pitch.
+	SoundBank: every sound and music cue the game plays, by name, with volume and pitch.
 
-	Swapping a sound means changing its id here, nothing else. Each entry's source
-	and licence is recorded in docs/audio-licences.md; keep the two in step.
-	All of these are Creator Store sound effects licensed for use in Roblox
-	experiences (the Pro Sound Effects library, and one uploaded by Roblox).
+	Swapping an audio asset means changing its id here, nothing else. Each entry's
+	source and licence is recorded in docs/audio-licences.md; keep the two in step.
+	All entries are public, moderated Creator Store assets licensed by Roblox
+	(Pro Sound Effects, APM Music and Roblox).
 ]]
 
 export type Sound = {
@@ -13,6 +13,7 @@ export type Sound = {
 	Volume: number,
 	Pitch: number,
 	Looped: boolean?,
+	IsMusic: boolean?,
 }
 
 local function define(sound: Sound): Sound
@@ -20,21 +21,38 @@ local function define(sound: Sound): Sound
 end
 
 local SoundBank = {
-	-- Low Drone Pulsing Tone Continuous 2 (SFX)
+	-- Engine & flight
 	EngineHum = define({ Id = 9116328633, Volume = 0.25, Pitch = 1.4, Looped = true }),
-	-- Whoosh By Fast Airy Swooshing Whipping Thuds (SFX)
 	Boost = define({ Id = 9126229255, Volume = 0.5, Pitch = 1.25 }),
-	Slingshot = define({ Id = 9126229255, Volume = 0.6, Pitch = 0.85 }),
-	-- swoosh.wav (Roblox)
+	Slingshot = define({ Id = 9126229255, Volume = 0.62, Pitch = 0.85 }),
+	OrbitLock = define({ Id = 9113399926, Volume = 0.26, Pitch = 1.38 }),
+
+	-- Combat, combo & planet defense
 	Push = define({ Id = 12222200, Volume = 0.45, Pitch = 0.8 }),
-	-- Rock Drop On Concrete Drops Breaks 1 (SFX)
+	Flare = define({ Id = 9125644310, Volume = 0.44, Pitch = 1.28 }),
 	Break = define({ Id = 9118587493, Volume = 0.7, Pitch = 1.1 }),
-	-- Shield Clang As Hit Metal Sword Hubcap 1 (SFX)
+	Perfect = define({ Id = 9125446879, Volume = 0.68, Pitch = 1.08 }),
+	CoreCrack = define({ Id = 9125446879, Volume = 0.75, Pitch = 0.86 }),
 	Clang = define({ Id = 9119072660, Volume = 0.6, Pitch = 1 }),
-	-- Low Impacts 3 (SFX)
-	Impact = define({ Id = 9116329922, Volume = 0.9, Pitch = 1 }),
-	-- Explosions 1 (SFX)
 	Bump = define({ Id = 9114361757, Volume = 0.4, Pitch = 1.6 }),
+	Impact = define({ Id = 9116329922, Volume = 0.9, Pitch = 1 }),
+	ShieldHit = define({ Id = 9118196441, Volume = 0.58, Pitch = 1.15 }),
+	Heal = define({ Id = 9125644310, Volume = 0.38, Pitch = 1.02 }),
+	ImpactAlarm = define({ Id = 9113399926, Volume = 0.34, Pitch = 1.65 }),
+
+	-- Wave flow & menus
+	WaveStart = define({ Id = 9120005874, Volume = 0.30, Pitch = 1.18 }),
+	WaveClear = define({ Id = 9125641284, Volume = 0.42, Pitch = 1.18 }),
+	UpgradePick = define({ Id = 9125644310, Volume = 0.48, Pitch = 1.45 }),
+	Victory = define({ Id = 9125641284, Volume = 0.68, Pitch = 1.0 }),
+	Defeat = define({ Id = 9120005874, Volume = 0.52, Pitch = 0.65 }),
+	UiClick = define({ Id = 9118138365, Volume = 0.34, Pitch = 1.4 }),
+
+	-- Wave-escalating chiptune soundtrack & Inferno boss theme (APM Chiptune album)
+	MusicCalm = define({ Id = 1837768444, Volume = 0.26, Pitch = 1.0, Looped = true, IsMusic = true }),
+	MusicMid = define({ Id = 1837768356, Volume = 0.28, Pitch = 1.0, Looped = true, IsMusic = true }),
+	MusicIntense = define({ Id = 1837768352, Volume = 0.30, Pitch = 1.0, Looped = true, IsMusic = true }),
+	MusicBoss = define({ Id = 1837768323, Volume = 0.33, Pitch = 1.0, Looped = true, IsMusic = true }),
 }
 
 return table.freeze(SoundBank)

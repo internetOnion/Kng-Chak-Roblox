@@ -1,0 +1,63 @@
+{
+  "className": "Model",
+  "children": [
+    {
+      "name": "Body1",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.72,
+          0.72,
+          0.72
+        ],
+        "Position": [
+          -0.18,
+          0.04,
+          -0.1
+        ],
+        "Color": [
+          0.7882,
+          0.5451,
+          0.3333
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Body2",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.62,
+          0.62,
+          0.62
+        ],
+        "Position": [
+          0.22,
+          -0.04,
+          0.14
+        ],
+        "Color": [
+          0.7882,
+          0.5451,
+          0.3333
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    }
+  ]
+}
