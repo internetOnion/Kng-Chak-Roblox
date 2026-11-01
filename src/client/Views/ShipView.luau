@@ -83,7 +83,7 @@ function ShipView.Listen(self: ShipView, events: RunEvents.RunEvents)
 	self._flame:Listen(events)
 end
 
-function ShipView.Update(self: ShipView, ship: ShipLook, dt: number?, active: boolean?)
+function ShipView.Update(self: ShipView, ship: ShipLook, dt: number?, active: boolean?, coneDeg: number?)
 	local pivot = ArenaSpace.CFrameAt(ship.Position, ship.Facing, LIFT)
 	self._model:PivotTo(pivot)
 
@@ -97,7 +97,7 @@ function ShipView.Update(self: ShipView, ship: ShipLook, dt: number?, active: bo
 	end
 
 	self._outline:SetState(true, false, ship.Position.Magnitude, Outlines.Tier.Hero)
-	self._flame:Update(ship, dt, active)
+	self._flame:Update(ship, dt, active, coneDeg)
 end
 
 function ShipView.Destroy(self: ShipView)

@@ -65,6 +65,7 @@ local StyleTile = require(script.Parent.Dev.StyleTile)
 local ThreatView = require(script.Parent.Views.ThreatView)
 local TuningPanel = require(script.Parent.Dev.TuningPanel)
 local UpgradeCards = require(script.Parent.UI.UpgradeCards)
+local VfxView = require(script.Parent.Views.VfxView)
 
 local DUMP_KEY = Enum.KeyCode.F7 -- Studio only: print the current run's recording
 local ZOOMS = { 50, 35 } -- the CamView candidates the phone playtest compares (#18)
@@ -85,6 +86,7 @@ type Session = {
 	shield: ShieldView.ShieldView,
 	ship: ShipView.ShipView,
 	threats: ThreatView.ThreatView,
+	vfx: VfxView.VfxView,
 }
 
 type State = "Start" | "Playing" | "Paused" | "Finished"
@@ -119,7 +121,9 @@ local function newSession(overrides: Tuning.Overrides?, startWave: number?): Ses
 
 	local planet = PlanetView.new(folder)
 	local ship = ShipView.new(folder)
-	ship:Listen(GameEvents)
+	ship:Listen(run.Events)
+	local vfx = VfxView.new(folder)
+	vfx:Listen(run.Events)
 	return {
 		run = run,
 		recorder = if RunService:IsStudio() and not startWave then Replay.Recorder.new(seed) else nil,
@@ -132,6 +136,7 @@ local function newSession(overrides: Tuning.Overrides?, startWave: number?): Ses
 		shield = ShieldView.new(folder),
 		ship = ship,
 		threats = ThreatView.new(folder),
+		vfx = vfx,
 	}
 end
 
@@ -141,6 +146,7 @@ local function endSession(session: Session)
 	session.ship:Destroy()
 	session.rocks:Destroy()
 	session.boss:Destroy()
+	session.vfx:Destroy()
 	session.run:Destroy()
 	session.folder:Destroy()
 end
@@ -439,12 +445,14 @@ return function()
 			end
 		end
 		local now = os.clock()
+		local coneDeg = if snapshot.Ship.IsInOrbit then tuning.Ship.FlareConeDeg else tuning.Ship.PushConeDeg
 		session.rings:Update(snapshot.Ship, arena)
-		session.ship:Update(snapshot.Ship, dt, playing)
+		session.ship:Update(snapshot.Ship, dt, playing, coneDeg)
 		session.rocks:Update(snapshot.Rocks)
 		session.boss:Update(snapshot.Boss, tuning.Inferno)
 		session.shield:Update(snapshot.PlanetShield, snapshot.PlanetMaxShield, arena)
 		session.threats:Update(snapshot, arena, now)
+		session.vfx:Update(snapshot, tuning, dt, playing)
 		Outlines.Step(arena.CamTilt)
 		if not showingTile then
 			radar:Update(snapshot, arena, focus, viewHalf, now)

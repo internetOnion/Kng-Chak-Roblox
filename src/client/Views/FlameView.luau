@@ -219,7 +219,7 @@ function FlameView.Listen(self: FlameView, events: RunEvents.RunEvents)
 	)
 end
 
-function FlameView.Update(self: FlameView, ship: FlameLook, dt: number?, active: boolean?)
+function FlameView.Update(self: FlameView, ship: FlameLook, dt: number?, active: boolean?, coneDeg: number?)
 	local stepDt = dt or 0
 	local isActive = if active == nil then true else active
 	if isActive and stepDt > 0 then
@@ -256,7 +256,9 @@ function FlameView.Update(self: FlameView, ship: FlameLook, dt: number?, active:
 	local throttle = ship.Throttle or math.clamp((ship.FlameReach - 4) / 9, 0, 1)
 	local powerScale =
 		math.clamp(0.76 + throttle * 0.28 + (if ship.IsBoosting or ship.IsSlingshotting then 0.14 else 0), 0.72, 1.2)
-	local orbitScale = if ship.IsInOrbit then ORBIT_WIDTH_SCALE else 1
+	local coneScale = if coneDeg
+		then math.clamp(coneDeg / 42, 0.9, 1.9)
+		else if ship.IsInOrbit then ORBIT_WIDTH_SCALE else 1
 	local flutter = if isActive and stepDt > 0 then math.sin(self._clock * 34) * 0.035 else 0
 
 	local p0 = ship.Position + dir0 * FLAME_START
@@ -270,7 +272,7 @@ function FlameView.Update(self: FlameView, ship: FlameLook, dt: number?, active:
 		local p2 = p1 + dir1 * c2
 		local p3 = p2 + dir2 * c3
 
-		local wx = band.width.X * powerScale * orbitScale * (1 + flutter)
+		local wx = band.width.X * powerScale * coneScale * (1 + flutter)
 		local wy = band.width.Y * powerScale * (1 - flutter * 0.6)
 		local lift = LIFT + band.liftOffset
 
