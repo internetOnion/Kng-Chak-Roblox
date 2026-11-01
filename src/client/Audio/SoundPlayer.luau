@@ -1,21 +1,28 @@
 --!strict
 --[[
-	SoundPlayer: plays the game's sounds from its events.
+	SoundPlayer: plays the game's sound effects from its events and threat state (#46).
 
 	    local sounds = SoundPlayer.new()
-	    sounds:Listen(GameEvents)                  -- once; GameEvents follows whichever Run is active
-	    sounds:UpdateEngine(snapshot.Ship, playing) -- every frame: the engine hum
+	    sounds:Listen(GameEvents)                              -- once; GameEvents follows whichever Run is active
+	    sounds:UpdateEngine(snapshot.Ship, playing, dt)        -- every frame: the engine hum
+	    sounds:UpdateThreat(snapshot, planetRadius, playing)   -- every frame: urgent impact warning pip
 
-	One-shot sounds play only in answer to game events (a boost, a push, a break,
-	a clang, a bump, a planet impact, a slingshot), never from inside the Run. The
-	engine hum is a loop whose volume and pitch follow the throttle, and it's
-	silent outside play. Sounds and their levels come from Audio/SoundBank.
+	One-shot sounds play in answer to game events and UI taps, never from inside
+	the Run. The engine hum is a loop whose volume and pitch follow the throttle,
+	and the urgent impact alarm pips at a rising tempo when a rock or the Inferno
+	is under Threat.UrgentEta seconds from hitting Ember. Sounds and their levels
+	come from Audio/SoundBank (documented in docs/audio-licences.md).
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
 
-local RunEvents = require(ReplicatedStorage.KngChak.Run.RunEvents)
+local KngChak = ReplicatedStorage.KngChak
+local Rock = require(KngChak.Rocks.Rock)
+local Run = require(KngChak.Run.Run)
+local RunEvents = require(KngChak.Run.RunEvents)
+local Threat = require(KngChak.Rocks.Threat)
+
 local SoundBank = require(script.Parent.SoundBank)
 
 local VOICES = 3 -- copies of each one-shot, so quick repeats overlap instead of cutting off
@@ -32,6 +39,7 @@ export type SoundPlayer = typeof(setmetatable(
 		_voices: { [string]: Voices },
 		_hum: Sound,
 		_humLevel: number,
+		_nextAlarmAt: number,
 	},
 	SoundPlayer
 ))
@@ -51,10 +59,10 @@ function SoundPlayer.new(): SoundPlayer
 	local folder = Instance.new("Folder")
 	folder.Name = "KngChakSounds"
 	folder.Parent = SoundService
-	local voices = {}
+	local voices: { [string]: Voices } = {}
 	for name, entry in SoundBank :: { [string]: SoundBank.Sound } do
-		if not entry.Looped then
-			local sounds = {}
+		if not entry.Looped and not entry.IsMusic then
+			local sounds: { Sound } = {}
 			for _ = 1, VOICES do
 				table.insert(sounds, make(folder, name, entry))
 			end
@@ -63,17 +71,27 @@ function SoundPlayer.new(): SoundPlayer
 	end
 	local hum = make(folder, "EngineHum", SoundBank.EngineHum)
 	hum.Volume = 0
-	return setmetatable({ _folder = folder, _voices = voices, _hum = hum, _humLevel = 0 }, SoundPlayer)
+	return setmetatable({
+		_folder = folder,
+		_voices = voices,
+		_hum = hum,
+		_humLevel = 0,
+		_nextAlarmAt = 0,
+	}, SoundPlayer)
 end
 
--- Plays the one-shot sound `name` from the SoundBank.
-function SoundPlayer.Play(self: SoundPlayer, name: string)
+-- Plays the one-shot sound `name` from the SoundBank (optionally nudging pitch).
+function SoundPlayer.Play(self: SoundPlayer, name: string, pitchScale: number?)
 	local voices = self._voices[name]
 	if not voices then
 		return
 	end
+	local entry = (SoundBank :: any)[name] :: SoundBank.Sound?
 	local sound = voices.sounds[voices.next]
 	voices.next = voices.next % #voices.sounds + 1
+	if entry then
+		sound.PlaybackSpeed = entry.Pitch * (pitchScale or 1)
+	end
 	sound.TimePosition = 0
 	sound:Play()
 end
@@ -87,13 +105,34 @@ function SoundPlayer.Listen(self: SoundPlayer, events: RunEvents.RunEvents)
 	end
 	on(events.Boosted, "Boost")
 	on(events.Slingshot, "Slingshot")
+	on(events.OrbitLocked, "OrbitLock")
 	on(events.RockPrimed, "Push")
+	on(events.RockFlared, "Flare")
 	on(events.RockBroken, "Break")
+	on(events.Perfect, "Perfect")
 	on(events.RockClanged, "Clang")
 	on(events.ShipBumped, "Bump")
 	on(events.PlanetHit, "Impact")
 	on(events.BossHit, "Impact")
-	on(events.CoreCracked, "Clang")
+	on(events.WaveStarted, "WaveStart")
+	on(events.WaveCleared, "WaveClear")
+	on(events.UpgradePicked, "UpgradePick")
+
+	events.CoreCracked:Connect(function()
+		self:Play("CoreCrack")
+		self:Play("Clang")
+	end)
+	events.ShieldChanged:Connect(function(_shield: number, delta: number)
+		if delta < 0 then
+			self:Play("ShieldHit")
+		end
+	end)
+	events.Healed:Connect(function()
+		self:Play("Heal")
+	end)
+	events.RunFinished:Connect(function(summary: Run.Summary)
+		self:Play(if summary.Won then "Victory" else "Defeat")
+	end)
 end
 
 -- The fields the hum reads. A Run snapshot's Ship has them all.
@@ -119,6 +158,47 @@ function SoundPlayer.UpdateEngine(self: SoundPlayer, ship: Engine, playing: bool
 	elseif not playing and self._hum.IsPlaying and self._humLevel < 0.01 then
 		self._hum:Stop()
 	end
+end
+
+-- Pulses the urgent impact warning pip while the nearest rock or boss is about to hit Ember.
+function SoundPlayer.UpdateThreat(
+	self: SoundPlayer,
+	snapshot: Run.Snapshot,
+	planetRadius: number,
+	playing: boolean,
+	now: number
+)
+	if not playing then
+		return
+	end
+
+	local minEta: number? = nil
+	if snapshot.ThreatId then
+		for _, rock: Rock.Rock in snapshot.Rocks do
+			if rock.Id == snapshot.ThreatId then
+				minEta = Threat.Eta(rock, planetRadius)
+				break
+			end
+		end
+	end
+	local boss = snapshot.Boss
+	if boss and not boss.IsHolding then
+		if not minEta or boss.TimeToImpact < minEta then
+			minEta = boss.TimeToImpact
+		end
+	end
+
+	if not minEta or minEta >= Threat.UrgentEta then
+		return
+	end
+	if now < self._nextAlarmAt then
+		return
+	end
+
+	local urgency = 1 - math.clamp(minEta / Threat.UrgentEta, 0, 1)
+	local interval = 0.68 - 0.36 * urgency -- 0.68s at 2.0s out -> 0.32s right before impact
+	self._nextAlarmAt = now + interval
+	self:Play("ImpactAlarm", 0.94 + 0.18 * urgency)
 end
 
 return SoundPlayer

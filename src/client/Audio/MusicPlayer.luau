@@ -1,0 +1,147 @@
+--!strict
+--[[
+	MusicPlayer: wave-escalating soundtrack and Inferno boss theme (#46).
+
+	    local music = MusicPlayer.new()
+	    music:Update(snapshot, state, dt) -- every frame
+
+	Crossfades smoothly across four public Creator Store tracks recorded in
+	Audio/SoundBank and docs/audio-licences.md:
+	  - MusicCalm:    Title screen and Waves 1-4
+	  - MusicMid:     Waves 5-8
+	  - MusicIntense: Waves 9-12
+	  - MusicBoss:    The Inferno (rising subtly across boss phases 1-3)
+
+	Ducks gently during Pause and UpgradePick so menus and cards read cleanly.
+]]
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local SoundService = game:GetService("SoundService")
+
+local Run = require(ReplicatedStorage.KngChak.Run.Run)
+local SoundBank = require(script.Parent.SoundBank)
+
+export type GameState = "Start" | "Playing" | "Paused" | "Finished"
+type TrackId = "MusicCalm" | "MusicMid" | "MusicIntense" | "MusicBoss"
+
+local TRACK_IDS: { TrackId } = { "MusicCalm", "MusicMid", "MusicIntense", "MusicBoss" }
+local FADE_RATE = 1.6 -- volume units per second for smooth crossfades
+local PITCH_EASE = 3.0
+
+type Track = {
+	sound: Sound,
+	spec: SoundBank.Sound,
+	level: number, -- 0..1 blend weight
+	pitch: number,
+}
+
+local MusicPlayer = {}
+MusicPlayer.__index = MusicPlayer
+
+export type MusicPlayer = typeof(setmetatable(
+	{} :: {
+		_group: SoundGroup,
+		_tracks: { [string]: Track },
+		_duck: number,
+	},
+	MusicPlayer
+))
+
+function MusicPlayer.new(): MusicPlayer
+	local group = Instance.new("SoundGroup")
+	group.Name = "KngChakMusic"
+	group.Volume = 1
+	group.Parent = SoundService
+
+	local tracks: { [string]: Track } = {}
+	for _, id in TRACK_IDS do
+		local spec = (SoundBank :: any)[id] :: SoundBank.Sound
+		local sound = Instance.new("Sound")
+		sound.Name = id
+		sound.SoundId = `rbxassetid://{spec.Id}`
+		sound.Volume = 0
+		sound.PlaybackSpeed = spec.Pitch
+		sound.Looped = true
+		sound.SoundGroup = group
+		sound.Parent = group
+		tracks[id] = {
+			sound = sound,
+			spec = spec,
+			level = 0,
+			pitch = spec.Pitch,
+		}
+	end
+
+	return setmetatable({
+		_group = group,
+		_tracks = tracks,
+		_duck = 1,
+	}, MusicPlayer)
+end
+
+local function pickCue(snapshot: Run.Snapshot, state: GameState): (TrackId, number, number)
+	if state == "Start" then
+		return "MusicCalm", 0.72, 0.97
+	elseif state == "Finished" then
+		local pitch = if snapshot.Phase == "Won" then 1.02 else 0.90
+		return "MusicCalm", 0.48, pitch
+	end
+
+	local boss = snapshot.Boss
+	if boss then
+		local phaseStep = math.clamp(boss.Phase - 1, 0, 2)
+		return "MusicBoss", 1.0 + 0.04 * phaseStep, 1.0 + 0.028 * phaseStep
+	end
+
+	local wave = math.max(1, snapshot.Wave)
+	if wave <= 4 then
+		local t = (wave - 1) / 3
+		return "MusicCalm", 0.88 + 0.12 * t, 1.0 + 0.04 * t
+	elseif wave <= 8 then
+		local t = (wave - 5) / 3
+		return "MusicMid", 0.92 + 0.12 * t, 1.0 + 0.045 * t
+	else
+		local t = math.clamp((wave - 9) / 3, 0, 1)
+		return "MusicIntense", 0.96 + 0.12 * t, 1.0 + 0.055 * t
+	end
+end
+
+function MusicPlayer.Update(self: MusicPlayer, snapshot: Run.Snapshot, state: GameState, dt: number)
+	local activeId, intensity, targetPitch = pickCue(snapshot, state)
+	local duckTarget = if state == "Paused" or (state == "Playing" and snapshot.Phase == "UpgradePick")
+		then 0.42
+		else 1.0
+	self._duck += (duckTarget - self._duck) * math.min(1, 5 * dt)
+
+	for _, id in TRACK_IDS do
+		local track = self._tracks[id]
+		local want = if id == activeId then intensity else 0
+		if track.level < want then
+			track.level = math.min(want, track.level + FADE_RATE * dt)
+		elseif track.level > want then
+			track.level = math.max(want, track.level - FADE_RATE * dt)
+		end
+
+		if id == activeId then
+			track.pitch += (targetPitch - track.pitch) * math.min(1, PITCH_EASE * dt)
+		end
+
+		local sound = track.sound
+		sound.Volume = track.spec.Volume * track.level * self._duck
+		sound.PlaybackSpeed = track.spec.Pitch * track.pitch
+
+		if track.level > 0.005 then
+			if not sound.IsPlaying then
+				sound:Play()
+			end
+		elseif sound.IsPlaying then
+			sound:Stop()
+		end
+	end
+end
+
+function MusicPlayer.Destroy(self: MusicPlayer)
+	self._group:Destroy()
+end
+
+return MusicPlayer

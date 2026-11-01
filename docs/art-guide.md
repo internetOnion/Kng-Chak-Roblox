@@ -49,6 +49,7 @@ The look was picked from three prototype style tiles. Screenshots and code are o
 | Heat: boost (white-gold) | edge `#ffa030`, mid `#ffe08a`, core `#ffffff` |
 | Heat: slingshot (blue) | edge `#2f7dff`, mid `#7fe6ff`, core `#f2ffff` |
 | Heat: stunned (grey) | edge `#40444d`, mid `#6a707c`, core `#9aa0aa` |
+| Heat: clank (metallic flash) | edge `#ffe066`, mid `#fff6cf`, core `#ffffff` |
 
 The rock colours here replace the old palette, and the rock type data should follow them.
 
@@ -59,7 +60,7 @@ Anything whose colour changes in play is one model whose part colours are set fr
 - **Studio parts first:** Ball, Cylinder, Block and Wedge parts in SmoothPlastic, and a sphere mesh on a block for stretched shapes (capsules, ellipsoids). Most of the game, including the ship, rocks and planet, can be built this way.
 - **Meshes only when parts can't do it** (the Inferno boss, a detailed ship skin). Make them in Blender, keep them low-poly with flat colours, and upload them as MeshParts. Every upload goes through Roblox moderation, so upload ahead of need.
 - Each model lives in the assets folder and is looked up by name, so swapping greybox for final art changes only assets, never code.
-- **How the views read a model:** build it around the origin with its front along −Z; the view resets the model's pivot to the origin before placing it. Rocks are built at radius 1 (the view scales them to their type's radius) and live at `Assets/Rocks/<type id>` (`Rock`, `Comet`, `Iron`, `Cluster`, `Shard`, `Gold`, and the Inferno's `Plate` and `Core`); parts named `Body…` are painted with the type's tint. The planet is built at radius 10. The Inferno's body is `Assets/Boss/Inferno`, built at radius 1 (the boss view scales it to `InfernoConfig.BodyRadius` and paints its `Body…` parts with `BodyTint`); its plates and core are rocks. Each model carries a `Highlight` named `Outline` (black; the rock view turns it pink while primed). The ship's `Spear`, `SpearTip` and `Flame` parts are driven by the ship view.
+- **How the views read a model:** build it around the origin with its front along −Z; the view resets the model's pivot to the origin before placing it. Rocks are built at radius 1 (the view scales them to their type's radius) and live at `Assets/Rocks/<type id>` as either a single `Model` (`Plate`, `Core`) or a `Folder` of shape variants (`kc_rock_<type>_a/b/c`, chosen deterministically from `rock.Id`); parts named `Body…` are painted with the type's tint (and blushed toward `#ff4fd8` while primed), while `Tail…`, `Seam…`, `Crack…` and `Facet…` parts take `Glow` when present. Break chunks live in `Assets/Debris/kc_debris_chunk_a..d`. The planet is built at radius 10 (`Ocean…`, `Land…`, `LandDark…`, `Ice…`, plus a Neon `Rim` halo painted from `Data/Districts` and spun gently around its north polar axis). The Inferno's body is `Assets/Boss/Inferno`, built at radius 1 (the boss view scales it to `InfernoConfig.BodyRadius` and paints its `Body…` parts with `BodyTint`); its plates and core are rocks. Each model carries a `Highlight` named `Outline`, managed globally by `Views/Outlines` + `Arena/OutlineBudget`. The ship's `Helmet…` and `Spear…` parts are swapped by `ShipView`, while `FlameView` renders the 3-band articulated Neon plume and nozzle sparks outside the hull's `Highlight`.
 - **Names:** `kc_<group>_<name>_<variant>`, e.g. `kc_rock_iron_a`, `kc_ship_nose_hard`, `kc_planet_ember`.
 - Keep part counts low: a rock about 5–10 parts, the ship about 15, the planet about 15. Up to 7 rocks are in flight at once on a phone.
 
@@ -96,13 +97,13 @@ Chunky, rounded and bright to match: thick rounded buttons, bold outlined number
 **Phase 1: style tile.** Finish the Toy Box tile in Studio from the prototype: Ember planet, the Lancer soft and hard, all rock types, the flame. Check it on a phone.
 
 **Phase 2: Ember gameplay**
-- [ ] Lancer: helmet nose (soft), spear nose (hard), body, stripe, engine grille, fins, window
-- [ ] Rocks: shard, rock, comet (+ tail), iron, cluster, gold, 2–3 shape variants each, the primed state, 3–4 debris chunks
-- [ ] Ember planet: ocean, land, ice cap, atmosphere rim
-- [ ] Sky: violet backdrop, 2 star layers
-- [ ] VFX: flame, sparks, impact burst, ignition ring, shield ring, PERFECT flash
-- [ ] World UI: fuel arc, threat ring, chevron, edge ripple (code)
+- [x] Lancer: helmet nose (soft, 13 visible parts), spear nose (hard, 13 visible parts; 15 hull parts total), body, stripe, engine grille, fins, window
+- [x] Rocks: shard, rock, comet (+ tail), iron, cluster, gold, 3 shape variants each (5–8 parts), the primed state, 4 debris chunks (2 parts each)
+- [x] Ember planet: ocean, land, ice cap, atmosphere rim (14 parts total, tinted from `Data/Districts` and spinning gently)
+- [x] Sky: violet backdrop, district nebula patches, 2 parallax star layers (`FarFollow = 0.90`, `NearFollow = 0.72`)
+- [x] VFX: articulated 3-band state flame + sparks, pooled break burst + debris, PERFECT flash + Shockwave ring, ignition ring, clang sparks, shield hit ripple, slingshot trail
+- [x] World UI: fuel arc, threat ring, chevron, edge ripple (code)
 
-**Phase 3: UI.** Fonts, HUD (HP %, combo, score), radar, upgrade card frame and Flame/Spear/Orbit icons, pause and results screens.
+**Phase 3: UI (complete for Ember).** Fonts (`FredokaOne` + `Montserrat`), HUD (HP %, combo, score), radar, upgrade card frame and Flame/Spear/Orbit diagrams, Toy Box Title, Pause and Results screens.
 
 **Phase 4: later.** Inferno boss (plates, core, burn VFX), Glacier and Foundry planets (their own land and ocean colours and sky tint), cosmetic part skins.
