@@ -2,7 +2,8 @@
 --[[
 	Overlay: Toy Box Title, Pause and Results menus in the brand fonts (#48).
 
-	    local overlay = Overlay.new(playerGui, function() sounds:Play("UiClick") end)
+	    local overlay = Overlay.new(playerGui, function() sounds:Play("UiClick") end, toggleMusic)
+	    overlay:SetMusicMuted(false)
 	    overlay:ShowStart(onStart, onControls)
 	    overlay:ShowPause(pauseStats, pauseActions)
 	    overlay:ShowResults(summary, lastWave, resultsActions)
@@ -91,9 +92,11 @@ export type Overlay = typeof(setmetatable(
 		_resultsScoreValue: TextLabel,
 		_resultsComboValue: TextLabel,
 		_resultsPerfectValue: TextLabel,
+		_musicButtons: { TextButton },
 		_mode: Mode,
 		_suppressed: boolean,
 		_onClickSound: (() -> ())?,
+		_onToggleMusic: (() -> ())?,
 		_onScrimTap: (() -> ())?,
 		_actions: { [string]: (() -> ())? },
 	},
@@ -231,7 +234,7 @@ local function makeStatCell(
 	return value
 end
 
-function Overlay.new(parent: Instance, onClickSound: (() -> ())?): Overlay
+function Overlay.new(parent: Instance, onClickSound: (() -> ())?, onToggleMusic: (() -> ())?): Overlay
 	-- Full-bleed scrim Gui (covers notches cleanly without shifting safe-inset layout)
 	local scrimGui = Instance.new("ScreenGui")
 	scrimGui.Name = "OverlayScrim"
@@ -306,15 +309,28 @@ function Overlay.new(parent: Instance, onClickSound: (() -> ())?): Overlay
 		_resultsScoreValue = nil :: any,
 		_resultsComboValue = nil :: any,
 		_resultsPerfectValue = nil :: any,
+		_musicButtons = {},
 		_mode = "None" :: Mode,
 		_suppressed = false,
 		_onClickSound = onClickSound,
+		_onToggleMusic = onToggleMusic,
 		_onScrimTap = nil :: (() -> ())?,
 		_actions = actions,
 	}, Overlay)
 
 	local function fire(key: string)
 		local fn = self._actions[key]
+		if not fn then
+			return
+		end
+		if self._onClickSound then
+			self._onClickSound()
+		end
+		fn()
+	end
+
+	local function fireMusicToggle()
+		local fn = self._onToggleMusic
 		if not fn then
 			return
 		end
@@ -382,7 +398,7 @@ function Overlay.new(parent: Instance, onClickSound: (() -> ())?): Overlay
 	startDock.Name = "ActionDock"
 	startDock.AnchorPoint = Vector2.new(0.5, 1)
 	startDock.Position = UDim2.new(0.5, 0, 1, -28)
-	startDock.Size = UDim2.fromOffset(440, 60)
+	startDock.Size = UDim2.fromOffset(580, 60)
 	startDock.BackgroundTransparency = 1
 	startDock.Parent = startView
 
@@ -394,12 +410,14 @@ function Overlay.new(parent: Instance, onClickSound: (() -> ())?): Overlay
 	dockLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	dockLayout.Parent = startDock
 
-	makeToyButton(startDock, "StartCall", "START CALL", UDim2.fromOffset(240, 58), RED, 26, 1, function()
+	makeToyButton(startDock, "StartCall", "START CALL", UDim2.fromOffset(236, 58), RED, 26, 1, function()
 		fire("StartPrimary")
 	end)
-	makeToyButton(startDock, "Controls", "CONTROLS", UDim2.fromOffset(164, 52), INDIGO, 20, 2, function()
+	makeToyButton(startDock, "Controls", "CONTROLS", UDim2.fromOffset(156, 52), INDIGO, 19, 2, function()
 		fire("StartControls")
 	end)
+	local startMusicBtn =
+		makeToyButton(startDock, "Music", "MUSIC: ON", UDim2.fromOffset(156, 52), INDIGO, 19, 3, fireMusicToggle)
 
 	-- =========================================================================
 	-- 2. PAUSE CARD
@@ -408,7 +426,7 @@ function Overlay.new(parent: Instance, onClickSound: (() -> ())?): Overlay
 	pauseCard.Name = "PauseCard"
 	pauseCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	pauseCard.Position = UDim2.fromScale(0.5, 0.5)
-	pauseCard.Size = UDim2.fromOffset(500, 296)
+	pauseCard.Size = UDim2.fromOffset(556, 296)
 	pauseCard.BackgroundColor3 = CARD
 	pauseCard.Visible = false
 	round(pauseCard, 16)
@@ -465,17 +483,19 @@ function Overlay.new(parent: Instance, onClickSound: (() -> ())?): Overlay
 	local pauseRowLayout = Instance.new("UIListLayout")
 	pauseRowLayout.FillDirection = Enum.FillDirection.Horizontal
 	pauseRowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	pauseRowLayout.Padding = UDim.new(0, 10)
+	pauseRowLayout.Padding = UDim.new(0, 8)
 	pauseRowLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	pauseRowLayout.Parent = pauseRow
 
-	makeToyButton(pauseRow, "Controls", "CONTROLS", UDim2.fromOffset(146, 46), INDIGO, 18, 1, function()
+	makeToyButton(pauseRow, "Controls", "CONTROLS", UDim2.fromOffset(126, 46), INDIGO, 17, 1, function()
 		fire("PauseControls")
 	end)
-	makeToyButton(pauseRow, "Restart", "RESTART", UDim2.fromOffset(146, 46), RED, 18, 2, function()
+	local pauseMusicBtn =
+		makeToyButton(pauseRow, "Music", "MUSIC: ON", UDim2.fromOffset(134, 46), INDIGO, 17, 2, fireMusicToggle)
+	makeToyButton(pauseRow, "Restart", "RESTART", UDim2.fromOffset(120, 46), RED, 17, 3, function()
 		fire("PauseRestart")
 	end)
-	makeToyButton(pauseRow, "TitleBtn", "TITLE", UDim2.fromOffset(146, 46), SLATE_INDIGO, 18, 3, function()
+	makeToyButton(pauseRow, "TitleBtn", "TITLE", UDim2.fromOffset(112, 46), SLATE_INDIGO, 17, 4, function()
 		fire("PauseTitle")
 	end)
 
@@ -486,7 +506,7 @@ function Overlay.new(parent: Instance, onClickSound: (() -> ())?): Overlay
 	resultsCard.Name = "ResultsCard"
 	resultsCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	resultsCard.Position = UDim2.fromScale(0.5, 0.5)
-	resultsCard.Size = UDim2.fromOffset(536, 304)
+	resultsCard.Size = UDim2.fromOffset(576, 304)
 	resultsCard.BackgroundColor3 = CARD
 	resultsCard.Visible = false
 	round(resultsCard, 16)
@@ -543,50 +563,33 @@ function Overlay.new(parent: Instance, onClickSound: (() -> ())?): Overlay
 	resultsActionsRow.BackgroundTransparency = 1
 	resultsActionsRow.Parent = resultsCard
 
-	local playAgainBtn = makeToyButton(
-		resultsActionsRow,
-		"PlayAgain",
-		"PLAY AGAIN",
-		UDim2.fromOffset(234, 56),
-		RED,
-		24,
-		1,
-		function()
-			fire("ResultsPlayAgain")
-		end
-	)
-	playAgainBtn.AnchorPoint = Vector2.new(0, 0.5)
-	playAgainBtn.Position = UDim2.fromScale(0, 0.5)
+	local resultsActionsLayout = Instance.new("UIListLayout")
+	resultsActionsLayout.FillDirection = Enum.FillDirection.Horizontal
+	resultsActionsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	resultsActionsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	resultsActionsLayout.Padding = UDim.new(0, 8)
+	resultsActionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	resultsActionsLayout.Parent = resultsActionsRow
 
-	local resultsControlsBtn = makeToyButton(
+	makeToyButton(resultsActionsRow, "PlayAgain", "PLAY AGAIN", UDim2.fromOffset(196, 56), RED, 22, 1, function()
+		fire("ResultsPlayAgain")
+	end)
+	makeToyButton(resultsActionsRow, "Controls", "CONTROLS", UDim2.fromOffset(110, 48), INDIGO, 16, 2, function()
+		fire("ResultsControls")
+	end)
+	local resultsMusicBtn = makeToyButton(
 		resultsActionsRow,
-		"Controls",
-		"CONTROLS",
-		UDim2.fromOffset(126, 50),
+		"Music",
+		"MUSIC: ON",
+		UDim2.fromOffset(120, 48),
 		INDIGO,
-		17,
-		2,
-		function()
-			fire("ResultsControls")
-		end
-	)
-	resultsControlsBtn.AnchorPoint = Vector2.new(1, 0.5)
-	resultsControlsBtn.Position = UDim2.new(1, -126, 0.5, 0)
-
-	local resultsTitleBtn = makeToyButton(
-		resultsActionsRow,
-		"TitleBtn",
-		"TITLE",
-		UDim2.fromOffset(116, 50),
-		SLATE_INDIGO,
-		17,
+		16,
 		3,
-		function()
-			fire("ResultsTitle")
-		end
+		fireMusicToggle
 	)
-	resultsTitleBtn.AnchorPoint = Vector2.new(1, 0.5)
-	resultsTitleBtn.Position = UDim2.fromScale(1, 0.5)
+	makeToyButton(resultsActionsRow, "TitleBtn", "TITLE", UDim2.fromOffset(86, 48), SLATE_INDIGO, 16, 4, function()
+		fire("ResultsTitle")
+	end)
 
 	self._startView = startView
 	self._pauseCard = pauseCard
@@ -599,6 +602,7 @@ function Overlay.new(parent: Instance, onClickSound: (() -> ())?): Overlay
 	self._resultsScoreValue = resultsScoreValue
 	self._resultsComboValue = resultsComboValue
 	self._resultsPerfectValue = resultsPerfectValue
+	self._musicButtons = { startMusicBtn, pauseMusicBtn, resultsMusicBtn }
 
 	scrimGui.Parent = parent
 	safeGui.Parent = parent
@@ -682,6 +686,26 @@ function Overlay.Hide(self: Overlay)
 	self._onScrimTap = nil
 	table.clear(self._actions)
 	refreshVisibility(self)
+end
+
+-- Updates the Music button state across Start, Pause and Results screens.
+function Overlay.SetMusicMuted(self: Overlay, muted: boolean)
+	local fill = if muted then STAGE else INDIGO
+	local text = if muted then "MUSIC: OFF" else "MUSIC: ON"
+	local textColor = if muted then SUBTEXT else WHITE
+	local sheenAlpha = if muted then 0.9 else 0.78
+	for _, btn in self._musicButtons do
+		btn.BackgroundColor3 = fill
+		local label = btn:FindFirstChild("Label") :: TextLabel?
+		if label then
+			label.Text = text
+			label.TextColor3 = textColor
+		end
+		local sheen = btn:FindFirstChild("Sheen") :: Frame?
+		if sheen then
+			sheen.BackgroundTransparency = sheenAlpha
+		end
+	end
 end
 
 -- Keeps the screen out of sight (while the style tile or controls card shows) without forgetting it.

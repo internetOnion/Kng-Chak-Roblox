@@ -7,8 +7,10 @@
 	results, lost or won (tap to play again) -> a fresh call, as often as you like,
 	without stopping play mode. The pause button (or Esc, or Roblox's own menu
 	opening) pauses the call; both Start and Pause include a Controls button to
-	reopen the visual controls guide anytime. Whether it's been seen lasts for this
-	visit until the saved profile (#50) keeps it.
+	reopen the visual controls guide anytime, and a music toggle (also beside Pause
+	during play, or M on keyboard) turns the soundtrack off or on. Whether controls
+	have been seen or music muted lasts for this visit until the saved profile (#50)
+	keeps it.
 
 	Each Run comes with its own views in a fresh Arena folder; a restart throws
 	both away. Each frame the input adapter turns the player's controls into the
@@ -50,6 +52,7 @@ local Device = require(script.Parent.Device)
 local FuelArc = require(script.Parent.UI.FuelArc)
 local Haptics = require(script.Parent.Input.Haptics)
 local Hud = require(script.Parent.UI.Hud)
+local MusicButton = require(script.Parent.UI.MusicButton)
 local MusicPlayer = require(script.Parent.Audio.MusicPlayer)
 local Outlines = require(script.Parent.Views.Outlines)
 local Overlay = require(script.Parent.UI.Overlay)
@@ -168,9 +171,21 @@ return function()
 	sounds:Listen(GameEvents)
 	local music = MusicPlayer.new()
 	local haptics = Haptics.new(playerGui)
+	local musicButton: MusicButton.MusicButton
+	local overlay: Overlay.Overlay
+	local function toggleMusic()
+		local muted = not music:IsMuted()
+		music:SetMuted(muted)
+		musicButton:SetMuted(muted)
+		overlay:SetMusicMuted(muted)
+	end
 	haptics:Listen(GameEvents)
-	local overlay = Overlay.new(playerGui, function()
+	overlay = Overlay.new(playerGui, function()
 		sounds:Play("UiClick")
+	end, toggleMusic)
+	musicButton = MusicButton.new(playerGui, function()
+		sounds:Play("UiClick")
+		toggleMusic()
 	end)
 	local controlsPanel = ControlsPanel.new(playerGui)
 	local controls = PlayerInput.new(playerGui)
@@ -194,6 +209,7 @@ return function()
 		chevron:SetVisible(visible)
 		fuelArc:SetVisible(visible)
 		pauseButton:SetVisible(visible)
+		musicButton:SetVisible(visible)
 		banner:SetVisible(visible)
 		callouts:SetVisible(visible)
 	end

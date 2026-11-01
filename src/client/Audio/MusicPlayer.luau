@@ -3,6 +3,7 @@
 	MusicPlayer: wave-escalating soundtrack and Inferno boss theme (#46).
 
 	    local music = MusicPlayer.new()
+	    music:SetMuted(true)             -- optional: silence and stop all music tracks
 	    music:Update(snapshot, state, dt) -- every frame
 
 	Crossfades smoothly across four public Creator Store chiptune tracks recorded
@@ -44,6 +45,7 @@ export type MusicPlayer = typeof(setmetatable(
 		_group: SoundGroup,
 		_tracks: { [string]: Track },
 		_duck: number,
+		_muted: boolean,
 	},
 	MusicPlayer
 ))
@@ -77,7 +79,30 @@ function MusicPlayer.new(): MusicPlayer
 		_group = group,
 		_tracks = tracks,
 		_duck = 1,
+		_muted = false,
 	}, MusicPlayer)
+end
+
+function MusicPlayer.IsMuted(self: MusicPlayer): boolean
+	return self._muted
+end
+
+function MusicPlayer.SetMuted(self: MusicPlayer, muted: boolean)
+	if self._muted == muted then
+		return
+	end
+	self._muted = muted
+	self._group.Volume = if muted then 0 else 1
+	if muted then
+		for _, id in TRACK_IDS do
+			local track = self._tracks[id]
+			track.level = 0
+			track.sound.Volume = 0
+			if track.sound.IsPlaying then
+				track.sound:Stop()
+			end
+		end
+	end
 end
 
 local function pickCue(snapshot: Run.Snapshot, state: GameState): (TrackId, number, number)
@@ -111,15 +136,23 @@ local function pickCue(snapshot: Run.Snapshot, state: GameState): (TrackId, numb
 end
 
 function MusicPlayer.Update(self: MusicPlayer, snapshot: Run.Snapshot, state: GameState, dt: number)
-	local activeId, intensity, targetPitch = pickCue(snapshot, state)
 	local duckTarget = if state == "Paused" or (state == "Playing" and snapshot.Phase == "UpgradePick")
 		then 0.42
 		else 1.0
+	if self._muted then
+		self._duck = duckTarget
+		return
+	end
+
+	local activeId, intensity, targetPitch = pickCue(snapshot, state)
 	self._duck += (duckTarget - self._duck) * math.min(1, 5 * dt)
 
 	for _, id in TRACK_IDS do
 		local track = self._tracks[id]
 		local want = if id == activeId then intensity else 0
+		if id == activeId and track.level == 0 then
+			track.pitch = targetPitch
+		end
 		if track.level < want then
 			track.level = math.min(want, track.level + FADE_RATE * dt)
 		elseif track.level > want then
