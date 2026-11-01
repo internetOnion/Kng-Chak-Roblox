@@ -1,0 +1,272 @@
+{
+  "className": "Model",
+  "children": [
+    {
+      "name": "Body",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          1.84,
+          1.84,
+          1.84
+        ],
+        "Position": [
+          0,
+          0,
+          0
+        ],
+        "Color": [
+          0.7882,
+          0.5451,
+          0.3333
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "BodyBump1",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          1.04,
+          0.92,
+          1.04
+        ],
+        "Position": [
+          -0.52,
+          0.08,
+          -0.26
+        ],
+        "Color": [
+          0.7882,
+          0.5451,
+          0.3333
+        ],
+        "Material": "SmoothPlastic"
+      },
+      "children": [
+        {
+          "name": "Mesh",
+          "className": "SpecialMesh",
+          "properties": {
+            "MeshType": "Sphere"
+          }
+        }
+      ]
+    },
+    {
+      "name": "BodyBump2",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.98,
+          0.9,
+          0.98
+        ],
+        "Position": [
+          0.48,
+          0.12,
+          0.36
+        ],
+        "Color": [
+          0.7882,
+          0.5451,
+          0.3333
+        ],
+        "Material": "SmoothPlastic"
+      },
+      "children": [
+        {
+          "name": "Mesh",
+          "className": "SpecialMesh",
+          "properties": {
+            "MeshType": "Sphere"
+          }
+        }
+      ]
+    },
+    {
+      "name": "BodyBump3",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.86,
+          0.86,
+          0.86
+        ],
+        "Position": [
+          -0.06,
+          0.18,
+          -0.66
+        ],
+        "Color": [
+          0.7882,
+          0.5451,
+          0.3333
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "BodyBump4",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.78,
+          0.78,
+          0.78
+        ],
+        "Position": [
+          -0.18,
+          0.14,
+          0.68
+        ],
+        "Color": [
+          0.7882,
+          0.5451,
+          0.3333
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Crater1",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.48,
+          0.48,
+          0.48
+        ],
+        "Position": [
+          0.12,
+          0.78,
+          -0.12
+        ],
+        "Color": [
+          0.5608,
+          0.3608,
+          0.2039
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Crater2",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.34,
+          0.34,
+          0.34
+        ],
+        "Position": [
+          -0.48,
+          0.62,
+          -0.22
+        ],
+        "Color": [
+          0.5608,
+          0.3608,
+          0.2039
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Crater3",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.32,
+          0.32,
+          0.32
+        ],
+        "Position": [
+          0.42,
+          0.64,
+          0.34
+        ],
+        "Color": [
+          0.5608,
+          0.3608,
+          0.2039
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Outline",
+      "className": "Highlight",
+      "properties": {
+        "OutlineColor": [
+          0,
+          0,
+          0
+        ],
+        "OutlineTransparency": 0,
+        "FillColor": [
+          1.0,
+          0.3098,
+          0.8471
+        ],
+        "FillTransparency": 1,
+        "DepthMode": "Occluded"
+      }
+    }
+  ]
+}

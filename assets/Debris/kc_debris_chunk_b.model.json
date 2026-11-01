@@ -1,0 +1,66 @@
+{
+  "className": "Model",
+  "children": [
+    {
+      "name": "BodyWedge",
+      "className": "WedgePart",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.76,
+          0.62,
+          0.98
+        ],
+        "Position": [
+          0,
+          0,
+          -0.08
+        ],
+        "Color": [
+          0.7882,
+          0.5451,
+          0.3333
+        ],
+        "Material": "SmoothPlastic"
+      }
+    },
+    {
+      "name": "BodyTail",
+      "className": "WedgePart",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.68,
+          0.54,
+          0.56
+        ],
+        "Position": [
+          0,
+          -0.02,
+          0.34
+        ],
+        "Color": [
+          0.7882,
+          0.5451,
+          0.3333
+        ],
+        "Material": "SmoothPlastic",
+        "Orientation": [
+          0,
+          180,
+          0
+        ]
+      }
+    }
+  ]
+}

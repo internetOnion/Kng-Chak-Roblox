@@ -1,0 +1,182 @@
+{
+  "className": "Model",
+  "children": [
+    {
+      "name": "Body",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          1.96,
+          1.96,
+          1.96
+        ],
+        "Position": [
+          0,
+          0,
+          0
+        ],
+        "Color": [
+          1.0,
+          0.8118,
+          0.1804
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      },
+      "children": [
+        {
+          "name": "Sparkles",
+          "className": "Sparkles",
+          "properties": {
+            "SparkleColor": [
+              1.0,
+              0.8784,
+              0.4
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "BodyLobe1",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.92,
+          0.92,
+          0.92
+        ],
+        "Position": [
+          0.46,
+          0.22,
+          0.38
+        ],
+        "Color": [
+          1.0,
+          0.8118,
+          0.1804
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "BodyLobe2",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.84,
+          0.84,
+          0.84
+        ],
+        "Position": [
+          -0.48,
+          0.16,
+          0.32
+        ],
+        "Color": [
+          1.0,
+          0.8118,
+          0.1804
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Shine1",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.52,
+          0.52,
+          0.52
+        ],
+        "Position": [
+          -0.36,
+          0.72,
+          -0.36
+        ],
+        "Color": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Shine2",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.28,
+          0.28,
+          0.28
+        ],
+        "Position": [
+          -0.08,
+          0.86,
+          -0.18
+        ],
+        "Color": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Outline",
+      "className": "Highlight",
+      "properties": {
+        "OutlineColor": [
+          0,
+          0,
+          0
+        ],
+        "OutlineTransparency": 0,
+        "FillColor": [
+          1.0,
+          0.3098,
+          0.8471
+        ],
+        "FillTransparency": 1,
+        "DepthMode": "Occluded"
+      }
+    }
+  ]
+}

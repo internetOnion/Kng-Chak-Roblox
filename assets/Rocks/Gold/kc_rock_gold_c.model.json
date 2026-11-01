@@ -1,0 +1,227 @@
+{
+  "className": "Model",
+  "children": [
+    {
+      "name": "Body",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          1.88,
+          1.88,
+          1.88
+        ],
+        "Position": [
+          0,
+          0,
+          0
+        ],
+        "Color": [
+          1.0,
+          0.8118,
+          0.1804
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      },
+      "children": [
+        {
+          "name": "Sparkles",
+          "className": "Sparkles",
+          "properties": {
+            "SparkleColor": [
+              1.0,
+              0.8784,
+              0.4
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "BodyNugget1",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          1.0,
+          0.86,
+          1.0
+        ],
+        "Position": [
+          -0.38,
+          0.18,
+          -0.28
+        ],
+        "Color": [
+          1.0,
+          0.8118,
+          0.1804
+        ],
+        "Material": "SmoothPlastic"
+      },
+      "children": [
+        {
+          "name": "Mesh",
+          "className": "SpecialMesh",
+          "properties": {
+            "MeshType": "Sphere"
+          }
+        }
+      ]
+    },
+    {
+      "name": "BodyNugget2",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.96,
+          0.84,
+          0.96
+        ],
+        "Position": [
+          0.42,
+          0.14,
+          0.24
+        ],
+        "Color": [
+          1.0,
+          0.8118,
+          0.1804
+        ],
+        "Material": "SmoothPlastic"
+      },
+      "children": [
+        {
+          "name": "Mesh",
+          "className": "SpecialMesh",
+          "properties": {
+            "MeshType": "Sphere"
+          }
+        }
+      ]
+    },
+    {
+      "name": "BodyNugget3",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.84,
+          0.84,
+          0.84
+        ],
+        "Position": [
+          0.06,
+          0.28,
+          -0.52
+        ],
+        "Color": [
+          1.0,
+          0.8118,
+          0.1804
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Shine1",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.5,
+          0.5,
+          0.5
+        ],
+        "Position": [
+          -0.38,
+          0.68,
+          -0.32
+        ],
+        "Color": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Shine2",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.28,
+          0.28,
+          0.28
+        ],
+        "Position": [
+          0.24,
+          0.76,
+          0.12
+        ],
+        "Color": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Outline",
+      "className": "Highlight",
+      "properties": {
+        "OutlineColor": [
+          0,
+          0,
+          0
+        ],
+        "OutlineTransparency": 0,
+        "FillColor": [
+          1.0,
+          0.3098,
+          0.8471
+        ],
+        "FillTransparency": 1,
+        "DepthMode": "Occluded"
+      }
+    }
+  ]
+}

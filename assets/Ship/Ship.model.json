@@ -12,9 +12,9 @@
         "CanTouch": false,
         "CanQuery": false,
         "Size": [
-          2.2,
-          1.25,
-          1.25
+          2.15,
+          1.28,
+          1.28
         ],
         "Position": [
           0,
@@ -36,6 +36,43 @@
       }
     },
     {
+      "name": "BodyAft",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          1.22,
+          1.22,
+          0.9
+        ],
+        "Position": [
+          0,
+          0,
+          0.88
+        ],
+        "Color": [
+          1.0,
+          0.2314,
+          0.2314
+        ],
+        "Material": "SmoothPlastic"
+      },
+      "children": [
+        {
+          "name": "Mesh",
+          "className": "SpecialMesh",
+          "properties": {
+            "MeshType": "Sphere"
+          }
+        }
+      ]
+    },
+    {
       "name": "Stripe",
       "className": "Part",
       "properties": {
@@ -46,19 +83,53 @@
         "CanTouch": false,
         "CanQuery": false,
         "Size": [
-          0.35,
+          0.38,
+          1.35,
+          1.35
+        ],
+        "Position": [
+          0,
+          0,
+          0.24
+        ],
+        "Color": [
+          1.0,
+          0.8314,
+          0.0
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Cylinder",
+        "Orientation": [
+          0,
+          90,
+          0
+        ]
+      }
+    },
+    {
+      "name": "Collar",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.2,
           1.32,
           1.32
         ],
         "Position": [
           0,
           0,
-          0.25
+          -0.92
         ],
         "Color": [
           1.0,
-          0.8314,
-          0.0
+          1.0,
+          1.0
         ],
         "Material": "SmoothPlastic",
         "Shape": "Cylinder",
@@ -81,13 +152,13 @@
         "CanQuery": false,
         "Size": [
           0.4,
-          0.95,
-          0.95
+          0.98,
+          0.98
         ],
         "Position": [
           0,
           0,
-          1.25
+          1.24
         ],
         "Color": [
           0.2275,
@@ -104,6 +175,74 @@
       }
     },
     {
+      "name": "Nozzle",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.22,
+          1.08,
+          1.08
+        ],
+        "Position": [
+          0,
+          0,
+          1.44
+        ],
+        "Color": [
+          0.1529,
+          0.1529,
+          0.2
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Cylinder",
+        "Orientation": [
+          0,
+          90,
+          0
+        ]
+      }
+    },
+    {
+      "name": "WindowRim",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.16,
+          0.68,
+          0.68
+        ],
+        "Position": [
+          0,
+          0.54,
+          -0.42
+        ],
+        "Color": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Cylinder",
+        "Orientation": [
+          0,
+          0,
+          90
+        ]
+      }
+    },
+    {
       "name": "Window",
       "className": "Part",
       "properties": {
@@ -114,14 +253,14 @@
         "CanTouch": false,
         "CanQuery": false,
         "Size": [
-          0.55,
-          0.55,
-          0.55
+          0.56,
+          0.56,
+          0.56
         ],
         "Position": [
           0,
-          0.5,
-          -0.45
+          0.52,
+          -0.42
         ],
         "Color": [
           0.5608,
@@ -143,14 +282,14 @@
         "CanTouch": false,
         "CanQuery": false,
         "Size": [
-          0.9,
-          0.25,
-          0.8
+          0.96,
+          0.26,
+          0.86
         ],
         "Position": [
-          -0.85,
-          -0.1,
-          0.85
+          -0.88,
+          -0.06,
+          0.82
         ],
         "Color": [
           1.0,
@@ -160,7 +299,7 @@
         "Material": "SmoothPlastic",
         "Orientation": [
           0,
-          -25,
+          -26,
           0
         ]
       }
@@ -176,14 +315,14 @@
         "CanTouch": false,
         "CanQuery": false,
         "Size": [
-          0.9,
-          0.25,
-          0.8
+          0.96,
+          0.26,
+          0.86
         ],
         "Position": [
-          0.85,
-          -0.1,
-          0.85
+          0.88,
+          -0.06,
+          0.82
         ],
         "Color": [
           1.0,
@@ -193,9 +332,37 @@
         "Material": "SmoothPlastic",
         "Orientation": [
           0,
-          25,
+          26,
           0
         ]
+      }
+    },
+    {
+      "name": "FinTop",
+      "className": "WedgePart",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.22,
+          0.52,
+          0.78
+        ],
+        "Position": [
+          0,
+          0.72,
+          0.72
+        ],
+        "Color": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "Material": "SmoothPlastic"
       }
     },
     {
@@ -209,14 +376,14 @@
         "CanTouch": false,
         "CanQuery": false,
         "Size": [
-          1.3,
-          1.3,
-          1.3
+          1.32,
+          1.32,
+          1.32
         ],
         "Position": [
           0,
           0,
-          -1.1
+          -1.12
         ],
         "Color": [
           1.0,
@@ -226,6 +393,43 @@
         "Material": "SmoothPlastic",
         "Shape": "Ball"
       }
+    },
+    {
+      "name": "HelmetBadge",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.34,
+          0.24,
+          0.42
+        ],
+        "Position": [
+          0,
+          0.58,
+          -1.24
+        ],
+        "Color": [
+          1.0,
+          0.2314,
+          0.2314
+        ],
+        "Material": "SmoothPlastic"
+      },
+      "children": [
+        {
+          "name": "Mesh",
+          "className": "SpecialMesh",
+          "properties": {
+            "MeshType": "Sphere"
+          }
+        }
+      ]
     },
     {
       "name": "Spear",
@@ -238,14 +442,14 @@
         "CanTouch": false,
         "CanQuery": false,
         "Size": [
-          0.95,
-          0.95,
-          2.2
+          0.96,
+          0.96,
+          2.24
         ],
         "Position": [
           0,
           0,
-          -1.7
+          -1.72
         ],
         "Color": [
           0.9569,
@@ -276,14 +480,14 @@
         "CanTouch": false,
         "CanQuery": false,
         "Size": [
-          0.35,
-          0.35,
-          0.35
+          0.42,
+          0.42,
+          0.42
         ],
         "Position": [
           0,
           0,
-          -2.75
+          -2.78
         ],
         "Color": [
           1.0,
@@ -294,123 +498,6 @@
         "Shape": "Ball",
         "Transparency": 1
       }
-    },
-    {
-      "name": "FlameEdge",
-      "className": "Part",
-      "properties": {
-        "TopSurface": "Smooth",
-        "BottomSurface": "Smooth",
-        "Anchored": true,
-        "CanCollide": false,
-        "CanTouch": false,
-        "CanQuery": false,
-        "Size": [
-          1.1,
-          0.6,
-          1
-        ],
-        "Position": [
-          0,
-          0,
-          2
-        ],
-        "Color": [
-          1.0,
-          0.2902,
-          0.1098
-        ],
-        "Material": "Neon",
-        "Transparency": 1,
-        "CastShadow": false
-      },
-      "children": [
-        {
-          "name": "Mesh",
-          "className": "SpecialMesh",
-          "properties": {
-            "MeshType": "Sphere"
-          }
-        }
-      ]
-    },
-    {
-      "name": "FlameMid",
-      "className": "Part",
-      "properties": {
-        "TopSurface": "Smooth",
-        "BottomSurface": "Smooth",
-        "Anchored": true,
-        "CanCollide": false,
-        "CanTouch": false,
-        "CanQuery": false,
-        "Size": [
-          0.792,
-          0.432,
-          1
-        ],
-        "Position": [
-          0,
-          0,
-          2
-        ],
-        "Color": [
-          1.0,
-          0.6039,
-          0.1216
-        ],
-        "Material": "Neon",
-        "Transparency": 1,
-        "CastShadow": false
-      },
-      "children": [
-        {
-          "name": "Mesh",
-          "className": "SpecialMesh",
-          "properties": {
-            "MeshType": "Sphere"
-          }
-        }
-      ]
-    },
-    {
-      "name": "FlameCore",
-      "className": "Part",
-      "properties": {
-        "TopSurface": "Smooth",
-        "BottomSurface": "Smooth",
-        "Anchored": true,
-        "CanCollide": false,
-        "CanTouch": false,
-        "CanQuery": false,
-        "Size": [
-          0.484,
-          0.264,
-          1
-        ],
-        "Position": [
-          0,
-          0,
-          2
-        ],
-        "Color": [
-          1.0,
-          0.8784,
-          0.4
-        ],
-        "Material": "Neon",
-        "Transparency": 1,
-        "CastShadow": false
-      },
-      "children": [
-        {
-          "name": "Mesh",
-          "className": "SpecialMesh",
-          "properties": {
-            "MeshType": "Sphere"
-          }
-        }
-      ]
     },
     {
       "name": "Outline",

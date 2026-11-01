@@ -1,0 +1,206 @@
+{
+  "className": "Model",
+  "children": [
+    {
+      "name": "Body",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          1.68,
+          1.68,
+          1.68
+        ],
+        "Position": [
+          0,
+          0,
+          0
+        ],
+        "Color": [
+          0.4549,
+          0.5294,
+          0.6392
+        ],
+        "Material": "SmoothPlastic",
+        "Orientation": [
+          0,
+          30,
+          0
+        ]
+      }
+    },
+    {
+      "name": "BodyPlate",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          1.32,
+          0.24,
+          1.32
+        ],
+        "Position": [
+          0,
+          0.82,
+          0
+        ],
+        "Color": [
+          0.4549,
+          0.5294,
+          0.6392
+        ],
+        "Material": "SmoothPlastic",
+        "Orientation": [
+          0,
+          30,
+          0
+        ]
+      }
+    },
+    {
+      "name": "Rivet1",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.34,
+          0.34,
+          0.34
+        ],
+        "Position": [
+          -0.8469,
+          0.88,
+          -0.2269
+        ],
+        "Color": [
+          0.2353,
+          0.2745,
+          0.3451
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Rivet2",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.34,
+          0.34,
+          0.34
+        ],
+        "Position": [
+          -0.2269,
+          0.88,
+          0.8469
+        ],
+        "Color": [
+          0.2353,
+          0.2745,
+          0.3451
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Rivet3",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.34,
+          0.34,
+          0.34
+        ],
+        "Position": [
+          0.2269,
+          0.88,
+          -0.8469
+        ],
+        "Color": [
+          0.2353,
+          0.2745,
+          0.3451
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Rivet4",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.34,
+          0.34,
+          0.34
+        ],
+        "Position": [
+          0.8469,
+          0.88,
+          0.2269
+        ],
+        "Color": [
+          0.2353,
+          0.2745,
+          0.3451
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Outline",
+      "className": "Highlight",
+      "properties": {
+        "OutlineColor": [
+          0,
+          0,
+          0
+        ],
+        "OutlineTransparency": 0,
+        "FillColor": [
+          1.0,
+          0.3098,
+          0.8471
+        ],
+        "FillTransparency": 1,
+        "DepthMode": "Occluded"
+      }
+    }
+  ]
+}

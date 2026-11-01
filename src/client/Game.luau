@@ -49,6 +49,7 @@ local DevBar = require(script.Parent.Dev.DevBar)
 local Device = require(script.Parent.Device)
 local FuelArc = require(script.Parent.UI.FuelArc)
 local Hud = require(script.Parent.UI.Hud)
+local Outlines = require(script.Parent.Views.Outlines)
 local Overlay = require(script.Parent.UI.Overlay)
 local PauseButton = require(script.Parent.UI.PauseButton)
 local PlanetView = require(script.Parent.Views.PlanetView)
@@ -77,6 +78,7 @@ type Session = {
 	recorder: Replay.Recorder?, -- Studio only, so a long run on a phone doesn't keep every frame
 	log: { string },
 	folder: Folder,
+	planet: PlanetView.PlanetView,
 	boss: BossView.BossView,
 	rings: RingsView.RingsView,
 	rocks: RockView.RockView,
@@ -115,23 +117,30 @@ local function newSession(overrides: Tuning.Overrides?, startWave: number?): Ses
 	local run = Run.new({ Seed = seed, Tuning = overrides, StartWave = startWave })
 	GameEvents.Follow(run.Events)
 
-	PlanetView.new(folder)
+	local planet = PlanetView.new(folder)
+	local ship = ShipView.new(folder)
+	ship:Listen(GameEvents)
 	return {
 		run = run,
 		recorder = if RunService:IsStudio() and not startWave then Replay.Recorder.new(seed) else nil,
 		log = Replay.Log(run),
 		folder = folder,
+		planet = planet,
 		boss = BossView.new(folder),
 		rings = RingsView.new(folder),
 		rocks = RockView.new(folder),
 		shield = ShieldView.new(folder),
-		ship = ShipView.new(folder),
+		ship = ship,
 		threats = ThreatView.new(folder),
 	}
 end
 
 local function endSession(session: Session)
 	GameEvents.Follow(nil)
+	session.planet:Destroy()
+	session.ship:Destroy()
+	session.rocks:Destroy()
+	session.boss:Destroy()
 	session.run:Destroy()
 	session.folder:Destroy()
 end
@@ -156,7 +165,7 @@ return function()
 	local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui") :: PlayerGui
 	Device.Setup(playerGui)
 	Stage.Light()
-	Stage.Sky(workspace, Vector2.zero, SKY_HALF)
+	local sky = Stage.Sky(workspace, Vector2.zero, SKY_HALF)
 	local hud = Hud.new(playerGui)
 	local callouts = Callouts.new(playerGui)
 	callouts:Listen(GameEvents)
@@ -350,9 +359,11 @@ return function()
 					local shown = tile or StyleTile.new()
 					tile = shown
 					if showingTile then
+						session.folder.Parent = nil
 						shown:Show()
 					else
 						shown:Hide()
+						session.folder.Parent = workspace
 					end
 					showPlayUi(state == "Playing" and not showingTile)
 					overlay:SetSuppressed(showingTile)
@@ -366,6 +377,12 @@ return function()
 					return "Inferno"
 				end,
 				onClick = function()
+					if showingTile and tile then
+						showingTile = false
+						tile:Hide()
+						overlay:SetSuppressed(false)
+						controlsPanel:SetSuppressed(false)
+					end
 					begin(WaveConfig.LastWave + 1) -- past the last wave: the Inferno at once
 				end,
 			},
@@ -407,20 +424,29 @@ return function()
 
 		local tuning = session.run:GetTuning()
 		local arena = tuning.Arena
+		local playing = state == "Playing" and not showingTile
 		if showingTile and tile then
+			tile:Update(dt)
 			camera:LookAt(tile.Focus, arena)
 		else
 			camera:Update(snapshot.Ship.Position, arena, dt)
 		end
+		local focus, viewHalf = camera:View()
+		if not showingTile then
+			sky:Update(focus)
+			if state ~= "Paused" then
+				session.planet:Update(dt)
+			end
+		end
 		local now = os.clock()
 		session.rings:Update(snapshot.Ship, arena)
-		session.ship:Update(snapshot.Ship)
+		session.ship:Update(snapshot.Ship, dt, playing)
 		session.rocks:Update(snapshot.Rocks)
 		session.boss:Update(snapshot.Boss, tuning.Inferno)
 		session.shield:Update(snapshot.PlanetShield, snapshot.PlanetMaxShield, arena)
 		session.threats:Update(snapshot, arena, now)
+		Outlines.Step(arena.CamTilt)
 		if not showingTile then
-			local focus, viewHalf = camera:View()
 			radar:Update(snapshot, arena, focus, viewHalf, now)
 			chevron:Update(snapshot, arena.PlanetRadius, now)
 			fuelArc:Update(snapshot, tuning.Ship, now)
@@ -428,7 +454,6 @@ return function()
 		end
 		hud:Update(snapshot)
 		controlsPanel:Update(now)
-		local playing = state == "Playing" and not showingTile
 		local inArena = playing and snapshot.Phase ~= "UpgradePick"
 		cards:Update(snapshot, playing, now, tuning.Waves.SurgeHeal)
 		banner:SetVisible(inArena) -- the cards take the screen

@@ -1,0 +1,227 @@
+{
+  "className": "Model",
+  "children": [
+    {
+      "name": "Body",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          1.96,
+          1.96,
+          1.96
+        ],
+        "Position": [
+          0,
+          0,
+          0
+        ],
+        "Color": [
+          0.7882,
+          0.5451,
+          0.3333
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "BodyBump1",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.95,
+          0.95,
+          0.95
+        ],
+        "Position": [
+          -0.42,
+          0.16,
+          0.62
+        ],
+        "Color": [
+          0.7882,
+          0.5451,
+          0.3333
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "BodyBump2",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.88,
+          0.88,
+          0.88
+        ],
+        "Position": [
+          0.54,
+          0.22,
+          -0.44
+        ],
+        "Color": [
+          0.7882,
+          0.5451,
+          0.3333
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "BodyBump3",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.82,
+          0.82,
+          0.82
+        ],
+        "Position": [
+          0.22,
+          -0.1,
+          0.68
+        ],
+        "Color": [
+          0.7882,
+          0.5451,
+          0.3333
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Crater1",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.46,
+          0.46,
+          0.46
+        ],
+        "Position": [
+          -0.32,
+          0.78,
+          -0.28
+        ],
+        "Color": [
+          0.5608,
+          0.3608,
+          0.2039
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Crater2",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.36,
+          0.36,
+          0.36
+        ],
+        "Position": [
+          0.38,
+          0.76,
+          0.28
+        ],
+        "Color": [
+          0.5608,
+          0.3608,
+          0.2039
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Crater3",
+      "className": "Part",
+      "properties": {
+        "TopSurface": "Smooth",
+        "BottomSurface": "Smooth",
+        "Anchored": true,
+        "CanCollide": false,
+        "CanTouch": false,
+        "CanQuery": false,
+        "Size": [
+          0.32,
+          0.32,
+          0.32
+        ],
+        "Position": [
+          0.05,
+          0.84,
+          -0.42
+        ],
+        "Color": [
+          0.5608,
+          0.3608,
+          0.2039
+        ],
+        "Material": "SmoothPlastic",
+        "Shape": "Ball"
+      }
+    },
+    {
+      "name": "Outline",
+      "className": "Highlight",
+      "properties": {
+        "OutlineColor": [
+          0,
+          0,
+          0
+        ],
+        "OutlineTransparency": 0,
+        "FillColor": [
+          1.0,
+          0.3098,
+          0.8471
+        ],
+        "FillTransparency": 1,
+        "DepthMode": "Occluded"
+      }
+    }
+  ]
+}
